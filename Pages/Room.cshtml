@@ -1,0 +1,43 @@
+﻿@page "{roomName}"
+@model BombermanAspNet.Pages.RoomModel
+@{
+}
+
+<div class="container vh-100">
+    <div class="row pt-4 pb-2">
+        <h2>@Model.PlayerName, welcome to Room @Model.RoomName!</h2>
+    </div>
+    <div class="row h-75">
+        <div id="GameSection" class="col-8 border h-100 d-flex align-items-center justify-content-center">
+            <canvas id="GameCanvas" width="450" height="390" style="border:1px solid #000000;">
+
+            </canvas>
+        </div>
+        <div id="ChatSection" class="col-3 offset-1 h-100">
+            <div class="row border h-75">
+                <div id="messagesScrollbox" class="col-12 scrollbox mb-1">
+                    <ul id="messagesList" class="list-group mb-2"></ul>
+                </div>
+            </div>
+            <div class="row h-25">
+                <div class="col-12 pt-4">
+                    <div class="form-group">
+                        <label for="ChatMessageInput">Send a message</label>
+                        <input type="text" class="form-control" id="ChatMessageInput" aria-describedby="chatHelp" placeholder="Enter message">
+                        <small id="chatHelp" class="form-text text-muted">Time to release your inner gamer.</small>
+                    </div>
+                    <div class="row d-flex justify-content-between">
+                        <div class="col">
+                            <button class="btn btn-primary btn-sm btn-block" type="button" id="SendMessageButton">Send</button>
+                        </div>
+                        <div class="col">
+                            <button class="btn btn-dark btn-sm btn-block" type="button" id="ClearMessagesButton">Clear</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/room.js"></script>

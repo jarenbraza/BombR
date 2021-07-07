@@ -1,0 +1,91 @@
+﻿@page "/"
+@model LobbyModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="jumbotron mt-4">
+    <div class="container">
+        <h1 class="display-4"><img src="~/img/bombicon.png" style="height: 0.9em;" class="pr-3 py-1"/>Bomberman</h1>
+        <p class="lead">Play with friends in this maze-based strategy game, made fully online using ASP.NET and the SignalR library.</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row">
+        <div class="col-6">
+            <h2>Account Settings</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-6">
+            <form>
+                <div class="form-group">
+                    <label for="playerNameLabel">Display name</label>
+                    <input type="text" class="form-control" id="playerNameInput" aria-describedby="playerNameHelp" placeholder="Enter display name">
+                    <small id="playerNameHelp" class="form-text text-muted">This will be shown to others when playing and chatting.</small>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid pb-5">
+    <div class="row">
+        <div class="col">
+            <h2>Play With Others</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col border-right">
+            <form>
+                <div class="form-group">
+                    <label for="joinRoomLabel">Join an existing room</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <button class="btn btn-primary" type="button" id="joinRoomButton">Join Room</button>
+                        </div>
+                        <input type="text" class="form-control" id="joinRoomInput" aria-describedby="joinRoomHelp" placeholder="Enter existing room name">
+                    </div>
+                    <small id="joinRoomHelp" class="form-text text-muted">Check below for live updates on available rooms.</small>
+                </div>
+            </form>
+        </div>
+        <div class="col">
+            <form>
+                <div class="container">
+                    <div class="row">
+                        <label for="joinRoomLabel">Create a new room</label>
+                    </div>
+                    <div class="row">
+                        <button class="btn btn-primary" type="button" id="createRoomButton">Create Room</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <table id="roomTable" class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Room Name</th>
+                        <th scope="col">Connected Players</th>
+                    </tr>
+                </thead>
+                <tbody id="roomTableBody">
+                    <tr class="no-rooms-placeholder">
+                        <td colspan="2">No rooms currently open.</td>
+                    </tr>
+                    <tr class="no-rooms-placeholder">
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/lobby.js"></script>
