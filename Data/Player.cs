@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace BombermanAspNet.Data
+﻿namespace BombermanAspNet.Data
 {
-    public class Player
+	public class Player
     {
         private static int previousRow = GameState.RowCount - 2;
         private static int previousCol = 1;

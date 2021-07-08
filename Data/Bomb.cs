@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Globalization;
 
 namespace BombermanAspNet.Data
 {
-    public class Bomb : IComparable<Bomb>
+	public class Bomb : IComparable<Bomb>
     {
-        public Bomb(long durationInMilliseconds, Player player)
+        private const long BombDurationInMilliseconds = 3000;
+
+        public Bomb(Player player)
         {
             Expiration = DateTime.Now;
-            Expiration = Expiration.AddMilliseconds(durationInMilliseconds);
+            Expiration = Expiration.AddMilliseconds(BombDurationInMilliseconds);
             Row = player.Row;
             Col = player.Col;
             ExplosionDistance = player.ExplosionDistance;

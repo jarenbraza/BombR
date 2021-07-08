@@ -4,7 +4,8 @@
 // Startup //
 /////////////
 
-let roomName = "";
+// TODO: Prevent clients from hacking into another lobby by sending names from controller to hub to client.
+let roomName = "";   
 let playerName = "";
 let gameState = {};
 
@@ -14,6 +15,7 @@ const ctx = canvas.getContext("2d");
 
 // Game to Canvas Content
 const DrawSize = 30; // (30px, 30px) is size of one block on game canvas
+const Radius = DrawSize / 2;
 const EmptyCode = 0;
 const BreakableWallCode = 1;
 const UnbreakableWallCode = 2;
@@ -170,7 +172,7 @@ function drawGame(state) {
                 ctx.fillStyle = "#C8ADC0";
             }
 
-            ctx.fillRect(col * DrawSize, row * DrawSize, DrawSize, DrawSize);
+            drawBlock(col, row);
         }
     }
 
@@ -179,23 +181,27 @@ function drawGame(state) {
     const player = getPlayer(state.players)
 
     for (let i = 0; i < otherPlayers.length; i++) {
-        const otherPlayer = otherPlayers[i];
         ctx.fillStyle = "#F03A47";
-        ctx.fillRect(otherPlayer.col * DrawSize, otherPlayer.row * DrawSize, DrawSize, DrawSize);
+        const otherPlayer = otherPlayers[i];
+        drawBlock(otherPlayer.col, otherPlayer.row);
     }
 
     ctx.fillStyle = "#37FF8B";
-    ctx.fillRect(player.col * DrawSize, player.row * DrawSize, DrawSize, DrawSize);
+    drawBlock(player.col, player.row);
 
     // Draw bombs
     for (let i = 0; i < state.bombs.length; i++) {
         const bomb = state.bombs[i];
-        const radius = DrawSize / 2;
         ctx.fillStyle = "blue";
-        ctx.beginPath();
-        ctx.arc(bomb.col * DrawSize + radius, bomb.row * DrawSize + radius, radius, 0, 2 * Math.PI);
-        ctx.fill();
+        drawCircle(bomb.col, bomb.row);
     }
+
+    // Draw explosions
+    for (let i = 0; i < state.explosions.length; i++) {
+        const explosion = state.explosions[i];
+        ctx.fillStyle = "#8b0000";
+        drawBlock(explosion.col, explosion.row);
+	}
 }
 
 function addSystemChatMessage(message) {
@@ -271,4 +277,14 @@ function getPlayer(players) {
     }
 
     return null;
+}
+
+function drawBlock(col, row) {
+    ctx.fillRect(col * DrawSize, row * DrawSize, DrawSize, DrawSize);
+}
+
+function drawCircle(col, row) {
+    ctx.beginPath();
+    ctx.arc(col * DrawSize + Radius, row * DrawSize + Radius, Radius, 0, 2 * Math.PI);
+    ctx.fill();
 }

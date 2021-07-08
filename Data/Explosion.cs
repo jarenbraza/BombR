@@ -7,10 +7,12 @@ namespace BombermanAspNet.Data
 {
     public class Explosion : IComparable<Explosion>
     {
-        public Explosion(long durationInMilliseconds, int row, int col)
+        private const long ExplosionDurationInMilliseconds = 1000;
+
+        public Explosion(int row, int col)
         {
-            Expiration = new DateTime();
-            Expiration.AddMilliseconds(durationInMilliseconds);
+            Expiration = DateTime.Now;
+            Expiration = Expiration.AddMilliseconds(ExplosionDurationInMilliseconds);
             Row = row;
             Col = col;
         }
@@ -21,7 +23,7 @@ namespace BombermanAspNet.Data
 
         public bool IsExpired()
         {
-            return Expiration >= new DateTime();
+            return Expiration <= DateTime.Now;
         }
 
         public int CompareTo(Explosion other)

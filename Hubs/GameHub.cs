@@ -1,14 +1,12 @@
 ﻿using BombermanAspNet.Data;
 using Microsoft.AspNetCore.SignalR;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Timers;
 
 namespace BombermanAspNet.Hubs
 {
-    public class GameHub : Hub
+	public class GameHub : Hub
     {
         private readonly BombermanGame game;
 
