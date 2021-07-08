@@ -1,4 +1,6 @@
-﻿namespace BombermanAspNet.Data
+﻿using System.Collections.Generic;
+
+namespace BombermanAspNet.Data
 {
     public static class GameConstants
     {
@@ -8,6 +10,9 @@
         public const int UnbreakableWall = 2;
         public const int Bomb = 3;
         public const int BrokenWall = 4;
+
+        // Used for game logic of checking all directions
+        public static readonly int[,] Directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
 
         // Key codes used in game
         public const int KeyCodeW = 87;
@@ -21,5 +26,18 @@
         public const int KeyCodeRight = 39;
 
         public const int KeyCodeSpace = 32;
+
+        public static HashSet<int> ValidKeyCodes = new()
+        {
+            KeyCodeW,
+            KeyCodeA,
+            KeyCodeS,
+            KeyCodeD,
+            KeyCodeUp,
+            KeyCodeLeft,
+            KeyCodeDown,
+            KeyCodeRight,
+            KeyCodeSpace
+        };
     }
 }

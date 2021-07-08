@@ -17,7 +17,7 @@ namespace BombermanAspNet.Hubs
             this.game = game;
         }
 
-        public async Task<GameState> JoinGameRoom(string roomName, string playerName)
+        public async Task JoinGameRoom(string roomName, string playerName)
         {
             if (string.IsNullOrEmpty(roomName))
             {
@@ -30,25 +30,33 @@ namespace BombermanAspNet.Hubs
             }
 
             await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
-            GameState state = game.GetOrCreateGameState(roomName);
-            game.AddPlayerToGame(playerName, ref state);
-            return state;
+
+            try
+			{
+                game.JoinRoom(roomName, playerName);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Unable to join room " + roomName);
+                Debug.WriteLine(e);
+			}
         }
 
-        public async Task GetGameState(string roomName)
+        public async Task RefreshGameState(string roomName)
         {
             if (string.IsNullOrEmpty(roomName))
             {
                 throw new ArgumentException(nameof(roomName));
             }
 
-            if (game.TryGetGameState(roomName, out var state))
+            try
             {
-                await Clients.Caller.SendAsync("ReceiveGameState", state);
+                await Clients.Group(roomName).SendAsync("ReceiveGameState", game.GetGameState(roomName));
             }
-            else
+            catch (Exception e)
             {
-                Debug.WriteLine("Unable to find game state for room " + roomName + ". Attempting to generate room.");
+                Debug.WriteLine("Unable to update game state for room " + roomName);
+                Debug.WriteLine(e);
             }
         }
 
@@ -64,28 +72,21 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(playerName));
             }
 
-            if (game.HandleMove(roomName, playerName, keyCode))
+            if (!GameConstants.ValidKeyCodes.Contains(keyCode))
             {
-                await Clients.Group(roomName).SendAsync("ReceiveGameState", state);
+                throw new ArgumentException(nameof(keyCode));
+            }
+
+            try
+			{
+                game.HandleMove(roomName, playerName, keyCode);
+                await Clients.Group(roomName).SendAsync("ReceiveGameState", game.GetGameState(roomName));
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Unable to update game state for room " + roomName + " and player " + playerName);
+                Debug.WriteLine(e);
             }
         }
-
-        public async Task RefreshGameStateForOthers(string roomName)
-        {
-            if (string.IsNullOrEmpty(roomName))
-            {
-                throw new ArgumentException(nameof(roomName));
-            }
-
-            if (game.TryGetGameState(roomName, out var state))
-            {
-                await Clients.OthersInGroup(roomName).SendAsync("ReceiveGameState", state);
-            }
-            else
-            {
-                throw new HubException("Failed to refresh game state to others for room " + roomName);
-            }
-        }
-
     }
 }

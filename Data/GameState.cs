@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BombermanAspNet.Data
 {
-    public class GameState
+    public class GameState : IEquatable<GameState>
     {
         public const int RowCount = 13;
         public const int ColCount = 15;
@@ -30,7 +30,7 @@ namespace BombermanAspNet.Data
                     {
                         Board[r].Add(GameConstants.UnbreakableWall);
                     }
-                    else if (InPlayerSafePosition(r, c) && random.Next(0, 100) < 60)
+                    else if (IsSafeWallPlacement(r, c) && random.Next(0, 100) < 60)
                     {
                         Board[r].Add(GameConstants.BreakableWall);
                     }
@@ -47,26 +47,31 @@ namespace BombermanAspNet.Data
         public SortedSet<Bomb> Bombs { get; set; }
         public SortedSet<Explosion> Explosions { get; set; }
 
-        public GameState Clone()
+		public bool Equals(GameState other)
+		{
+            if (other is null)
+			{
+                return false;
+			}
+
+            if (ReferenceEquals(this, other))
+			{
+                return true;
+			}
+
+            return Players.Equals(other.Players)
+                && Board.Equals(other.Board)
+                && Bombs.Equals(other.Bombs)
+                && Explosions.Equals(other.Explosions);
+		}
+
+		// Hard coded safe placements of walls
+		private bool IsSafeWallPlacement(int row, int col)
         {
-            GameState clonedState = new GameState();
-
-            // TODO: Check if the internal class (Player, List<int>, Bomb, Explosion) actually get deep copied or not.
-            clonedState.Players = new Dictionary<string, Player>(Players);
-            clonedState.Board = new List<List<int>>(Board);
-            clonedState.Bombs = new SortedSet<Bomb>(Bombs);
-            clonedState.Explosions = new SortedSet<Explosion>(Explosions);
-
-            return clonedState;
-        }
-
-        // TODO: Figure out better way not to hard code safely placing breakable walls
-        private bool InPlayerSafePosition(int row, int col)
-        {
-            return (row != 1 || (col != 1 && col != 2 && col != ColCount - 2 && col != ColCount - 3))
+            return (row != 1 || (col > 2 && col < ColCount - 2))
                 && (row != 2 || (col != 1 && col != ColCount - 2))
                 && (row != RowCount - 3 || (col != 1 && col != ColCount - 2))
-                && (row != RowCount - 2 || (col != 1 && col != 2 && col != ColCount - 2 && col != ColCount - 3));
+                && (row != RowCount - 2 || (col > 2 && col < ColCount - 2));
         }
     }
 }

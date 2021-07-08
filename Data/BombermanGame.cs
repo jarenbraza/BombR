@@ -26,28 +26,9 @@ namespace BombermanAspNet.Data
         {
             this.gameHub = gameHub;
             timer = new Timer(IntervalInMilliseconds);
-            timer.Elapsed += UpdateBombStatus;
+            timer.Elapsed += HandleBombsInAllRooms;
             timer.AutoReset = true;
             timer.Enabled = true;
-        }
-
-        private void UpdateBombStatus(object sender, ElapsedEventArgs e)
-        {
-            foreach (var roomName in GetRoomNames())
-            {
-                if (!gameStateOfRoom.TryGetValue(roomName, out var state))
-                {
-                    throw new 
-                }
-
-                currentState = GetGameState(roomName);
-
-                if (HandleBombs(ref state))
-                {
-                    Debug.WriteLine("Bombs have blown up successfully.");
-                    gameHub.Clients.Group(roomName).SendAsync("ReceiveGameState", state);
-                }
-            }
         }
 
         public ICollection<string> GetRoomNames()
@@ -55,188 +36,202 @@ namespace BombermanAspNet.Data
             return gameStateOfRoom.Keys;
         }
 
-        public GameState GetOrCreateGameState(string roomName)
+        public GameState GetGameState(string roomName)
         {
-            return gameStateOfRoom.GetOrAdd(roomName, new GameState());
+            if (!gameStateOfRoom.TryGetValue(roomName, out var state))
+            {
+                throw new ArgumentException("Failed to get game state for room " + roomName);
+            }
+
+            return state;
         }
 
-        public void AddPlayerToGame(string roomName, string playerName, ref GameState state)
+        public void JoinRoom(string roomName, string playerName)
         {
-            state.Players.Add(playerName, new Player());
+            // TODO: Potentially lock here, as game state is being obtained and updated
+            currentState = gameStateOfRoom.GetOrAdd(roomName, new GameState());
+            currentState.Players.Add(playerName, new Player());
+            SaveGameState(roomName);
         }
 
-        public bool HandleBombs(ref GameState state)
+        public void HandleMove(string roomName, string playerName, int keyCode)
         {
-            if (state.Bombs.Count <= 0)
+            // TODO: Potentially lock here, as game state is being obtained and updated
+            currentState = GetGameState(roomName);
+            Player player = currentState.Players[playerName];
+            bool hasUpdatedState = false;
+
+            if (IsUpMove(keyCode) && IsValidMove(player.Row - 1, player.Col))
+            {
+                player.Row -= 1;
+                hasUpdatedState = true;
+            }
+            else if (IsLeftMove(keyCode) && IsValidMove(player.Row, player.Col - 1))
+            {
+                player.Col -= 1;
+                hasUpdatedState = true;
+            }
+            else if (IsDownMove(keyCode) && IsValidMove(player.Row + 1, player.Col))
+            {
+                player.Row += 1;
+                hasUpdatedState = true;
+            }
+            else if (IsRightMove(keyCode) && IsValidMove(player.Row, player.Col + 1))
+            {
+                player.Col += 1;
+                hasUpdatedState = true;
+            }
+            else if (IsPlaceBomb(keyCode) && IsValidMove(player.Row, player.Col))
+            {
+                currentState.Bombs.Add(new Bomb(BombDurationInMilliseconds, player));
+                hasUpdatedState = true;
+            }
+
+            if (hasUpdatedState)
+			{
+                // TODO: Check if the player has moved into the explosion.
+                SaveGameState(roomName);
+			}
+
+            bool IsValidMove(int row, int col)
+            {
+                if (!IsInBounds(row, col))
+                {
+                    return false;
+                }
+
+                if (IsAnotherPlayerAliveAtPosition(playerName, row, col))
+                {
+                    return false;
+                }
+
+                if (GetBomb(row, col) != null)
+                {
+                    return false;
+                }
+
+                return currentState.Board[row][col] == GameConstants.Empty;
+            }
+        }
+
+        private async void HandleBombsInAllRooms(object sender, ElapsedEventArgs e)
+        {
+            foreach (var roomName in GetRoomNames())
+            {
+                // TODO: Potentially lock here, as game state is being obtained and updated
+                currentState = GetGameState(roomName);
+
+                if (HandleBombs())
+                {
+                    await gameHub.Clients.Group(roomName).SendAsync("ReceiveGameState", currentState);
+                    SaveGameState(roomName);
+                }
+            }
+        }
+
+        private bool HandleBombs()
+        {
+            if (currentState.Bombs.Count <= 0)
             {
                 return false;
             }
 
             bool hasExplodedBomb = false;
-            Bomb nextBombToExpire = state.Bombs.Min;
+            Bomb nextBombToExpire = currentState.Bombs.Min;
 
             while (nextBombToExpire != null && nextBombToExpire.IsExpired())
             {
-                ExplodeBomb(ref state, nextBombToExpire);
+                ExplodeBomb(nextBombToExpire);
                 hasExplodedBomb = true;
-                nextBombToExpire = state.Bombs.Min;
+                nextBombToExpire = currentState.Bombs.Min;
             }
 
             if (hasExplodedBomb)
             {
-                RemoveBrokenWalls(ref state);
+                RemoveBrokenWalls();
             }
 
             return hasExplodedBomb;
         }
 
-        private static void ExplodeBomb(ref GameState state, in Bomb bomb)
+        private void ExplodeBomb(in Bomb bomb)
         {
-            state.Bombs.Remove(bomb);
+            Debug.WriteLine("Blowing up bomb at (" + bomb.Col + ", " + bomb.Row + ")");
+            currentState.Bombs.Remove(bomb);
 
-            for (int d = 1; d <= bomb.ExplosionDistance; d++)
-            {
-                if (!HandleExplosion(ref state, bomb.Row, bomb.Col - d))
-                {
-                    break;
-                }
-            }
+            // TODO: Add explosion here
 
-            for (int d = 1; d <= bomb.ExplosionDistance; d++)
+            for (int i = 0; i < GameConstants.Directions.GetLength(0); i++)
             {
-                if (!HandleExplosion(ref state, bomb.Row, bomb.Col + d))
+                for (int d = 1; d <= bomb.ExplosionDistance; d++)
                 {
-                    break;
-                }
-            }
+                    int explosionRow = bomb.Row + GameConstants.Directions[i, 0] * d;
+                    int explosionCol = bomb.Col + GameConstants.Directions[i, 1] * d;
 
-            for (int d = 1; d <= bomb.ExplosionDistance; d++)
-            {
-                if (!HandleExplosion(ref state, bomb.Row - d, bomb.Col))
-                {
-                    break;
-                }
-            }
+                    if (!AbleToExpandExplosion(explosionRow, explosionCol))
+                    {
+                        break;
+                    }
 
-            for (int d = 1; d <= bomb.ExplosionDistance; d++)
-            {
-                if (!HandleExplosion(ref state, bomb.Row + d, bomb.Col))
-                {
-                    break;
+                    // TODO: Add explosion here
                 }
             }
         }
 
-        private static bool HandleExplosion(ref GameState state, int row, int col)
+        private bool AbleToExpandExplosion(int row, int col)
         {
-            if (IsInBounds(state.Board, row, col))
-            {
-                if (IsBreakable(state.Board[row][col]))
-                {
-                    state.Board[row][col] = GameConstants.BrokenWall;
-                    return false;
-                }
-
-                var bomb = GetBomb(state, row, col);
-
-                if (bomb != null)
-                {
-                    ExplodeBomb(ref state, bomb);
-                    return true;
-                }
-
-                var playerName = GetPlayerName(state, row, col);
-
-                if (playerName != null)
-                {
-                    state.Players[playerName].IsAlive = false;
-                    Debug.WriteLine("Player " + playerName + " has died x_x");
-                    return true;
-                }
-            }
-            else
+            if (!IsInBounds(row, col))
             {
                 return false;
+            }
+
+            if (IsBreakable(row, col))
+            {
+                currentState.Board[row][col] = GameConstants.BrokenWall;
+                return false;
+            }
+
+            Debug.WriteLine("Explosion on (" + col + ", " + row + ")");
+
+            var bomb = GetBomb(row, col);
+
+            if (bomb != null)
+            {
+                ExplodeBomb(bomb);
+            }
+
+            var playerName = GetPlayerName(row, col);
+
+            if (playerName != null)
+            {
+                currentState.Players[playerName].IsAlive = false;
+                Debug.WriteLine("Player " + playerName + " has died x_x");
             }
 
             return true;
         }
 
-        public bool HandleMove(string roomName, string playerName, int keyCode)
+        private void RemoveBrokenWalls()
         {
-            GameState state = GetGameState(roomName);
-            currentState = state.Clone();
-            Player player = state.Players[playerName];
-            bool hasUpdatedState = false;
-
-            if (IsUpMove(keyCode) && CanMoveIntoPosition(state, playerName, player.Row - 1, player.Col))
+            for (int r = 0; r < currentState.Board.Count; r++)
             {
-                player.Row -= 1;
-                hasUpdatedState = true;
-            }
-            else if (IsLeftMove(keyCode) && CanMoveIntoPosition(state, playerName, player.Row, player.Col - 1))
-            {
-                player.Col -= 1;
-                hasUpdatedState = true;
-            }
-            else if (IsDownMove(keyCode) && CanMoveIntoPosition(state, playerName, player.Row + 1, player.Col))
-            {
-                player.Row += 1;
-                hasUpdatedState = true;
-            }
-            else if (IsRightMove(keyCode) && CanMoveIntoPosition(state, playerName, player.Row, player.Col + 1))
-            {
-                player.Col += 1;
-                hasUpdatedState = true;
-            }
-            else if (IsPlaceBomb(keyCode) && CanMoveIntoPosition(state, playerName, player.Row, player.Col))
-            {
-                state.Bombs.Add(new Bomb(BombDurationInMilliseconds, player));
-                hasUpdatedState = true;
-            }
-
-            return hasUpdatedState;
-        }
-
-        private static void RemoveBrokenWalls(ref GameState state)
-        {
-            for (int r = 0; r < state.Board.Count; r++)
-            {
-                for (int c = 0; c < state.Board[r].Count; c++)
+                for (int c = 0; c < currentState.Board[r].Count; c++)
                 {
-                    if (state.Board[r][c] == GameConstants.BrokenWall)
+                    if (currentState.Board[r][c] == GameConstants.BrokenWall)
                     {
-                        state.Board[r][c] = GameConstants.Empty;
+                        currentState.Board[r][c] = GameConstants.Empty;
                     }
                 }
             }
         }
 
-        private static bool CanMoveIntoPosition(in GameState state, string playerName, int row, int col)
+
+
+        private string GetPlayerName(int row, int col)
         {
-            if (!IsInBounds(state.Board, row, col))
+            foreach (var playerName in currentState.Players.Keys)
             {
-                return false;
-            }
-
-            if (IsLivingPlayingAtPosition(state.Players, playerName, row, col))
-            {
-                return false;
-            }
-
-            if (GetBomb(state, row, col) != null)
-            {
-                return false;
-            }
-
-            return state.Board[row][col] == GameConstants.Empty;
-        }
-
-        private static string GetPlayerName(in GameState state, int row, int col)
-        {
-            foreach (var playerName in state.Players.Keys)
-            {
-                var player = state.Players[playerName];
+                var player = currentState.Players[playerName];
 
                 if (player.Row == row && player.Col == col)
                 {
@@ -247,27 +242,22 @@ namespace BombermanAspNet.Data
             return null;
         }
 
-        private static bool IsLivingPlayingAtPosition(in Dictionary<string, Player> players, string playerName, int row, int col)
+        private bool IsAnotherPlayerAliveAtPosition(string playerName, int row, int col)
         {
-            string playerNameAtPosition = GetPlayerName(state, row, col);
-
-            if (playerNameAtPosition == null)
-            {
-                return false;
-            }
+            string playerNameAtPosition = GetPlayerName(row, col);
 
             // Do not consider the player themselves
-            if (playerNameAtPosition.Equals(playerName))
+            if (playerNameAtPosition == null || playerNameAtPosition.Equals(playerName))
             {
                 return false;
             }
 
-            return players[playerNameAtPosition].IsAlive;
+            return currentState.Players[playerNameAtPosition].IsAlive;
         }
 
-        private static Bomb GetBomb(in GameState state, int row, int col)
+        private Bomb GetBomb(int row, int col)
         {
-            foreach (var bomb in state.Bombs)
+            foreach (var bomb in currentState.Bombs)
             {
                 if (bomb.Row == row && bomb.Col == col)
                 {
@@ -278,13 +268,17 @@ namespace BombermanAspNet.Data
             return null;
         }
 
-        private static bool IsInBounds(in List<List<int>> board, int row, int col)
+        private bool IsInBounds(int row, int col)
         {
-            return (row >= 0) && (col >= 0) && (row < board.Count) && (col < board[row].Count);
+            return (row >= 0)
+                && (col >= 0)
+                && (row < currentState.Board.Count)
+                && (col < currentState.Board[row].Count);
         }
 
-        private static bool IsBreakable(int boardValue)
+        private bool IsBreakable(int row, int col)
         {
+            int boardValue = currentState.Board[row][col];
             return boardValue == GameConstants.BreakableWall || boardValue == GameConstants.BrokenWall;
         }
 
@@ -313,19 +307,14 @@ namespace BombermanAspNet.Data
             return keyCode == GameConstants.KeyCodeSpace;
         }
 
-        private GameState GetGameState(string roomName)
-        {
-            if (!gameStateOfRoom.TryGetValue(roomName, out var state))
+        private void SaveGameState(string roomName)
+		{
+            GameState previousState = GetGameState(roomName);
+
+            if (!gameStateOfRoom.TryUpdate(roomName, currentState, previousState))
             {
-                throw new ArgumentException("Failed to get game state for room " + roomName);
+                throw new ArgumentException("Failed to update game state for room " + roomName);
             }
-
-            return state;
-        }
-
-        private GameState UpdateGameState(string roomName)
-        {
-            if (!gameStateOfRoom.TryUpdate())
         }
     }
 }

@@ -35,12 +35,10 @@ document.addEventListener("DOMContentLoaded", function (event) {
 ///////////////////////////////////////////////////////////////
 
 gameConnection.start().then(function () {
-    gameConnection.invoke("JoinGameRoom", roomName, playerName).then(function (state) {
-        gameConnection.invoke("RefreshGameStateForOthers", roomName).catch(function (err) {
+    gameConnection.invoke("JoinGameRoom", roomName, playerName).then(function () {
+        gameConnection.invoke("RefreshGameState", roomName).catch(function (err) {
             return handleError(err);
         });
-
-        drawGame(state);
     }).catch(function (err) {
         return handleError(err);
     });
