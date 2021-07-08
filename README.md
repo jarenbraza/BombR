@@ -6,3 +6,7 @@ SignalR provides real-time web functionality for lobby, game, and chat functiona
 
 ## Motivation
 This is mainly for getting used to C# again. It's a fun recreation of a past project made during in college.
+
+## (Very Early) Screenshots
+![Screenshot of the lobby](/wwwroot/img/lobbyScreenshot.jpg?raw=true "Lobby Screenshot")
+![Screenshot of the game room](/wwwroot/img/gameRoomScreenshot.jpg?raw=true "Game Room Screenshot")

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BombermanAspNet.Data
 {
-    public class GameState : IEquatable<GameState>
+    public class GameState
     {
         public const int RowCount = 13;
         public const int ColCount = 15;
@@ -47,31 +47,13 @@ namespace BombermanAspNet.Data
         public SortedSet<Bomb> Bombs { get; set; }
         public SortedSet<Explosion> Explosions { get; set; }
 
-		public bool Equals(GameState other)
-		{
-            if (other is null)
-			{
-                return false;
-			}
-
-            if (ReferenceEquals(this, other))
-			{
-                return true;
-			}
-
-            return Players.Equals(other.Players)
-                && Board.Equals(other.Board)
-                && Bombs.Equals(other.Bombs)
-                && Explosions.Equals(other.Explosions);
-		}
-
 		// Hard coded safe placements of walls
 		private bool IsSafeWallPlacement(int row, int col)
         {
-            return (row != 1 || (col > 2 && col < ColCount - 2))
-                && (row != 2 || (col != 1 && col != ColCount - 2))
-                && (row != RowCount - 3 || (col != 1 && col != ColCount - 2))
-                && (row != RowCount - 2 || (col > 2 && col < ColCount - 2));
+            return (row != 1 || (col > 2 && col < ColCount - 3))
+                && (row != 2 || (col > 1 && col < ColCount - 2))
+                && (row != RowCount - 3 || (col > 1 && col < ColCount - 2))
+                && (row != RowCount - 2 || (col > 2 && col < ColCount - 3));
         }
     }
 }
