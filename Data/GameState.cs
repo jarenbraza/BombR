@@ -47,6 +47,19 @@ namespace BombermanAspNet.Data
         public SortedSet<Bomb> Bombs { get; set; }
         public SortedSet<Explosion> Explosions { get; set; }
 
+        public GameState Clone()
+        {
+            GameState clonedState = new GameState();
+
+            // TODO: Check if the internal class (Player, List<int>, Bomb, Explosion) actually get deep copied or not.
+            clonedState.Players = new Dictionary<string, Player>(Players);
+            clonedState.Board = new List<List<int>>(Board);
+            clonedState.Bombs = new SortedSet<Bomb>(Bombs);
+            clonedState.Explosions = new SortedSet<Explosion>(Explosions);
+
+            return clonedState;
+        }
+
         // TODO: Figure out better way not to hard code safely placing breakable walls
         private bool InPlayerSafePosition(int row, int col)
         {

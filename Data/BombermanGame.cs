@@ -19,6 +19,9 @@ namespace BombermanAspNet.Data
         private readonly Timer timer;
         private readonly IHubContext<GameHub> gameHub;
 
+        // Tracks current game state of room during execution
+        private GameState currentState;
+        
         public BombermanGame(IHubContext<GameHub> gameHub)
         {
             this.gameHub = gameHub;
@@ -32,17 +35,17 @@ namespace BombermanAspNet.Data
         {
             foreach (var roomName in GetRoomNames())
             {
-                if (TryGetGameState(roomName, out var state))
+                if (!gameStateOfRoom.TryGetValue(roomName, out var state))
                 {
-                    if (HandleBombs(ref state))
-                    {
-                        Debug.WriteLine("Bombs have blown up successfully.");
-                        gameHub.Clients.Group(roomName).SendAsync("ReceiveGameState", state);
-                    }
+                    throw new 
                 }
-                else
+
+                currentState = GetGameState(roomName);
+
+                if (HandleBombs(ref state))
                 {
-                    throw new ArgumentException("Failed to get game state for room " + roomName);
+                    Debug.WriteLine("Bombs have blown up successfully.");
+                    gameHub.Clients.Group(roomName).SendAsync("ReceiveGameState", state);
                 }
             }
         }
@@ -52,17 +55,12 @@ namespace BombermanAspNet.Data
             return gameStateOfRoom.Keys;
         }
 
-        public bool TryGetGameState(string roomName, out GameState state)
-        {
-            return gameStateOfRoom.TryGetValue(roomName, out state);
-        }
-
         public GameState GetOrCreateGameState(string roomName)
         {
             return gameStateOfRoom.GetOrAdd(roomName, new GameState());
         }
 
-        public void AddPlayerToGame(string playerName, ref GameState state)
+        public void AddPlayerToGame(string roomName, string playerName, ref GameState state)
         {
             state.Players.Add(playerName, new Player());
         }
@@ -88,7 +86,7 @@ namespace BombermanAspNet.Data
             {
                 RemoveBrokenWalls(ref state);
             }
-            
+
             return hasExplodedBomb;
         }
 
@@ -164,8 +162,10 @@ namespace BombermanAspNet.Data
             return true;
         }
 
-        public bool HandleMove(ref GameState state, string playerName, int keyCode)
+        public bool HandleMove(string roomName, string playerName, int keyCode)
         {
+            GameState state = GetGameState(roomName);
+            currentState = state.Clone();
             Player player = state.Players[playerName];
             bool hasUpdatedState = false;
 
@@ -311,6 +311,21 @@ namespace BombermanAspNet.Data
         private static bool IsPlaceBomb(int keyCode)
         {
             return keyCode == GameConstants.KeyCodeSpace;
+        }
+
+        private GameState GetGameState(string roomName)
+        {
+            if (!gameStateOfRoom.TryGetValue(roomName, out var state))
+            {
+                throw new ArgumentException("Failed to get game state for room " + roomName);
+            }
+
+            return state;
+        }
+
+        private GameState UpdateGameState(string roomName)
+        {
+            if (!gameStateOfRoom.TryUpdate())
         }
     }
 }

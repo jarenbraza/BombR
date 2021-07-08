@@ -64,16 +64,9 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(playerName));
             }
 
-            if (game.TryGetGameState(roomName, out var state))
+            if (game.HandleMove(roomName, playerName, keyCode))
             {
-                if (game.HandleMove(ref state, playerName, keyCode))
-                {
-                    await Clients.Group(roomName).SendAsync("ReceiveGameState", state);
-                }
-            }
-            else
-            {
-                throw new HubException("Failed to get game state for room " + roomName);
+                await Clients.Group(roomName).SendAsync("ReceiveGameState", state);
             }
         }
 
