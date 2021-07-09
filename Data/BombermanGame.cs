@@ -1,14 +1,15 @@
-﻿using System;
+﻿using BombermanAspNet.Hubs;
+using Microsoft.AspNetCore.SignalR;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Timers;
-using BombermanAspNet.Hubs;
-using Microsoft.AspNetCore.SignalR;
 
 namespace BombermanAspNet.Data
 {
-    public class BombermanGame
+	public class BombermanGame
     {
         private const double IntervalInMilliseconds = 33; // 30 FPS
 
@@ -27,6 +28,7 @@ namespace BombermanAspNet.Data
             timer = new Timer(IntervalInMilliseconds);
             timer.Elapsed += HandleBombsInAllRooms;
             timer.Elapsed += HandleExplosionsInAllRooms;
+            timer.Elapsed += HandleWinnersInAllRooms;
             timer.AutoReset = true;
             timer.Enabled = true;
         }
@@ -280,8 +282,6 @@ namespace BombermanAspNet.Data
                 return false;
             }
 
-            Debug.WriteLine("Explosion on (" + col + ", " + row + ")");
-
             var bomb = GetBomb(row, col);
 
             if (bomb != null)
@@ -313,6 +313,36 @@ namespace BombermanAspNet.Data
                 }
             }
         }
+
+        private async void HandleWinnersInAllRooms(object sender, ElapsedEventArgs e)
+		{
+            // TODO: Surely there's a better way to write the announcement logic.
+            foreach (var roomName in GetRoomNames())
+            {
+                int livingPlayers = 0;
+                KeyValuePair<string, Player> lastAlive;
+                bool hasAnnouncedWinner = false;
+
+                lock (gameStateLock)
+                {
+                    currentState = GetGameState(roomName);
+                    livingPlayers = currentState.Players.Where(p => p.Value.IsAlive).Count();
+                    lastAlive = currentState.Players.Where(p => p.Value.IsAlive).First();
+                    hasAnnouncedWinner = currentState.HasAnnouncedWinner;
+
+                    if (livingPlayers == 1 && currentState.Players.Count > 1)
+                    {
+                        currentState.HasAnnouncedWinner = true;
+                        SaveGameState(roomName);
+                    }
+                }
+
+                if (!hasAnnouncedWinner && livingPlayers == 1 && currentState.Players.Count > 1)
+                {
+                    await gameHub.Clients.Group(roomName).SendAsync("ReceiveWinner", lastAlive.Key);
+                }
+            }
+		}
 
         private string GetPlayerName(int row, int col)
         {

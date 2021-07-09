@@ -13,6 +13,7 @@ namespace BombermanAspNet.Data
         public List<List<int>> Board { get; set; }
         public SortedSet<Bomb> Bombs { get; set; }
         public SortedSet<Explosion> Explosions { get; set; }
+        public bool HasAnnouncedWinner { get; set; }
 
         public GameState()
         {
@@ -20,6 +21,7 @@ namespace BombermanAspNet.Data
             Board = new();
             Bombs = new();
             Explosions = new();
+            HasAnnouncedWinner = false;
 
             for (int r = 0; r < RowCount; r++)
             {

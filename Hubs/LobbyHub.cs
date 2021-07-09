@@ -31,14 +31,16 @@ namespace BombermanAspNet.Hubs
 
             await Clients.Group(roomName).SendAsync("PlayerDisconnected", playerName);
 
-            if (!lobby.TryRemovePlayerFromRoom(playerName, roomName, out var playerNames))
+            if (lobby.TryRemovePlayerFromRoom(playerName, roomName, out var playerNames))
             {
-                throw new HubException("Unable to remove player " + playerName + " from room " + roomName);
+                var roomModel = new RoomModel(roomName, playerNames);
+                await Clients.All.SendAsync("UpdateRoom", roomModel).ConfigureAwait(false);
+                lobby.TryRemoveEmptyRoom(roomName);
             }
-
-            var roomModel = new RoomModel(roomName, playerNames);
-            await Clients.All.SendAsync("UpdateRoom", roomModel).ConfigureAwait(false);
-            lobby.TryRemoveEmptyRoom(roomName);
+            else
+			{
+                Debug.WriteLine("Unable to remove " + playerName + " from room " + roomName);
+			}
         }
 
         public async override Task OnConnectedAsync()
@@ -143,7 +145,7 @@ namespace BombermanAspNet.Hubs
 
             private static string GenerateRoomName()
             {
-                StringBuilder stringBuilder = new StringBuilder();
+                StringBuilder stringBuilder = new();
 
                 using (var rng = new RNGCryptoServiceProvider())
                 {

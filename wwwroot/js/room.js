@@ -50,6 +50,15 @@ gameConnection.on("ReceiveGameState", function (state) {
     drawGame(state);
 });
 
+gameConnection.on("ReceiveWinner", function (name) {
+    addSystemChatMessage(name + " has won! Do something better with your day now.");
+
+    lobbyConnection.stop().then(function () {
+        alert("You have been disconnected from room " + roomName);
+        console.log("You have been disconnected from room " + roomName);
+    });
+})
+
 ////////////////////////////////////////////////////////////////
 // Event Handlers for the SignalR hub connection of the lobby //
 ////////////////////////////////////////////////////////////////
@@ -181,12 +190,12 @@ function drawGame(state) {
     const player = getPlayer(state.players)
 
     for (let i = 0; i < otherPlayers.length; i++) {
-        ctx.fillStyle = "#F03A47";
         const otherPlayer = otherPlayers[i];
+        ctx.fillStyle = otherPlayer.isAlive ? "#F03A47" : "#A9A9A9";
         drawBlock(otherPlayer.col, otherPlayer.row);
     }
 
-    ctx.fillStyle = "#37FF8B";
+    ctx.fillStyle = player.isAlive ? "#37FF8B" : "#A9A9A9";
     drawBlock(player.col, player.row);
 
     // Draw bombs
