@@ -7,7 +7,12 @@ namespace BombermanAspNet.Data
     {
         public const int RowCount = 13;
         public const int ColCount = 15;
-        private readonly Random random = new Random();
+        private readonly Random random = new();
+
+        public Dictionary<string, Player> Players { get; set; }
+        public List<List<int>> Board { get; set; }
+        public SortedSet<Bomb> Bombs { get; set; }
+        public SortedSet<Explosion> Explosions { get; set; }
 
         public GameState()
         {
@@ -42,18 +47,15 @@ namespace BombermanAspNet.Data
             }
         }
 
-        public Dictionary<string, Player> Players { get; set; }
-        public List<List<int>> Board { get; set; }
-        public SortedSet<Bomb> Bombs { get; set; }
-        public SortedSet<Explosion> Explosions { get; set; }
-
 		// Hard coded safe placements of walls
-		private bool IsSafeWallPlacement(int row, int col)
+		private static bool IsSafeWallPlacement(int row, int col)
         {
             return (row != 1 || (col > 2 && col < ColCount - 3))
                 && (row != 2 || (col > 1 && col < ColCount - 2))
                 && (row != RowCount - 3 || (col > 1 && col < ColCount - 2))
                 && (row != RowCount - 2 || (col > 2 && col < ColCount - 3));
         }
+
+
     }
 }

@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BombermanAspNet.Data
 {
-    public class Explosion : IComparable<Explosion>
+	public class Explosion : IComparable<Explosion>
     {
         private const long ExplosionDurationInMilliseconds = 1000;
 

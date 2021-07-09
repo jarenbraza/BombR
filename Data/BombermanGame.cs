@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace BombermanAspNet.Data
 {
-    // TODO: This file is not well-designed. Too many reference changes to GameState and its members.
     public class BombermanGame
     {
         private const double IntervalInMilliseconds = 33; // 30 FPS

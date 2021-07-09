@@ -5,6 +5,12 @@
         private static int previousRow = GameState.RowCount - 2;
         private static int previousCol = 1;
 
+        public int Row { get; set; }
+        public int Col { get; set; }
+        public int RemainingBombs { get; set; }
+        public int ExplosionDistance { get; set; }
+        public bool IsAlive { get; set; }
+
         public Player()
         {
             RemainingBombs = 1;
@@ -15,12 +21,6 @@
             previousRow = Row;
             previousCol = Col;
         }
-
-        public int Row { get; set; }
-        public int Col { get; set; }
-        public int RemainingBombs { get; set; }
-        public int ExplosionDistance { get; set; }
-        public bool IsAlive { get; set; }
 
         public int GetNextRow()
         {

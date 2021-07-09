@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace BombermanAspNet
 {
-    public class Startup
+	public class Startup
     {
         public Startup(IConfiguration configuration)
         {
@@ -21,7 +21,7 @@ namespace BombermanAspNet
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
-            services.AddSignalR();
+            services.AddSignalR(options => options.EnableDetailedErrors = true);
             services.AddSingleton<BombermanGame>();
             services.AddSingleton<Lobby>();
         }

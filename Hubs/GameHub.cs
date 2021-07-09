@@ -27,16 +27,15 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(playerName));
             }
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
-
             try
-			{
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
                 game.JoinRoom(roomName, playerName);
             }
-            catch (Exception e)
+            catch
             {
-                Debug.WriteLine("Unable to join room " + roomName);
-                Debug.WriteLine(e);
+                Debug.WriteLine("Unable to join room " + roomName + " for player " + playerName);
+                throw;
 			}
         }
 
@@ -51,10 +50,10 @@ namespace BombermanAspNet.Hubs
             {
                 await Clients.Group(roomName).SendAsync("ReceiveGameState", game.GetGameState(roomName));
             }
-            catch (Exception e)
+            catch
             {
                 Debug.WriteLine("Unable to update game state for room " + roomName);
-                Debug.WriteLine(e);
+                throw;
             }
         }
 
@@ -80,10 +79,10 @@ namespace BombermanAspNet.Hubs
                 game.HandleMove(roomName, playerName, keyCode);
                 await Clients.Group(roomName).SendAsync("ReceiveGameState", game.GetGameState(roomName));
             }
-            catch (Exception e)
+            catch
             {
                 Debug.WriteLine("Unable to update game state for room " + roomName + " and player " + playerName);
-                Debug.WriteLine(e);
+                throw;
             }
         }
     }
