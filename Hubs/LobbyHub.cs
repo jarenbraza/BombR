@@ -1,146 +1,70 @@
-﻿using BombermanAspNet.Data;
-using BombermanAspNet.Models;
+﻿using BombermanAspNet.Utilities;
 using Microsoft.AspNetCore.SignalR;
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BombermanAspNet.Hubs
 {
-    public class LobbyHub : Hub
+	public class LobbyHub : Hub
     {
-        private readonly Lobby lobby;
+        private readonly LobbyUtils lobby;
 
-        public LobbyHub(Lobby lobby)
+        public LobbyHub(LobbyUtils lobby)
         {
             this.lobby = lobby;
         }
 
-        public async override Task OnDisconnectedAsync(Exception exception)
-        {
-            if (!lobby.TryRemoveConnectionContext(Context.ConnectionId, out var connectionContext))
-            {
-                Debug.WriteLine("Unable to get context for ID " + Context.ConnectionId);
-                return;
-            }
-
-            var playerName = connectionContext.PlayerName;
-            var roomName = connectionContext.RoomName;
-
-            await Clients.Group(roomName).SendAsync("PlayerDisconnected", playerName);
-
-            if (lobby.TryRemovePlayerFromRoom(playerName, roomName, out var playerNames))
-            {
-                var roomModel = new RoomModel(roomName, playerNames);
-                await Clients.All.SendAsync("UpdateRoom", roomModel).ConfigureAwait(false);
-                lobby.TryRemoveEmptyRoom(roomName);
-            }
-            else
-			{
-                Debug.WriteLine("Unable to remove " + playerName + " from room " + roomName);
-			}
-        }
-
         public async override Task OnConnectedAsync()
         {
-            foreach (var roomName in lobby.GetRooms())
+            foreach (var room in await lobby.GetRooms())
             {
-                if (lobby.TryGetPlayerNames(roomName, out var playerNames)) {
-                    RoomModel roomModel = new(roomName, playerNames);
-                    await Clients.Caller.SendAsync("UpdateRoom", roomModel).ConfigureAwait(false);
-                }
+                await Clients.Caller.SendAsync("UpdateRoomInTable", room).ConfigureAwait(false);
             }
 
             await base.OnConnectedAsync();
         }
 
-        public async Task JoinLobbyRoom(string roomName)
-        {
-            if (string.IsNullOrEmpty(roomName))
-            {
-                throw new ArgumentException(nameof(roomName));
-            }
-
-            await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
+        // Join is valid if player is not yet in the room
+        public async Task<bool> ValidateJoin(string roomName, string playerName)
+		{
+            var playerNames = await lobby.GetPlayerNamesInRoom(roomName);
+            return !playerNames.Contains(playerName);
         }
 
-        public async Task AddPlayerToRoom(AddPlayerToRoomRequest request)
-        {
-            var playerName = request.PlayerName;
-            var roomName = request.RoomName;
-
-            if (string.IsNullOrEmpty(playerName))
-            {
-                throw new ArgumentException(nameof(playerName));
-            }
-
-            if (string.IsNullOrEmpty(roomName))
-            {
-                throw new ArgumentException(nameof(roomName));
-            }
-
-            if (lobby.TryAddPlayerToRoom(playerName, roomName))
-            {
-                if (lobby.TryGetPlayerNames(roomName, out var playerNames))
-                {
-                    RoomModel roomModel = new(roomName, playerNames);
-                    await Clients.All.SendAsync("UpdateRoom", roomModel).ConfigureAwait(false);
-                    await Clients.Caller.SendAsync("RedirectToRoom", roomName, playerName).ConfigureAwait(false);
-                }
-                else
-                {
-                    throw new HubException("Failed to get information for room " + roomName);
-                }
-            }
-            else
-            {
-                throw new HubException("Failed to add player " + playerName + " to room " + roomName);
-            }
-        }
-
-        public string CreateRoom(CreateRoomRequest request)
+        public async Task<string> GenerateRoomName(GenerateRoomNameRequest request)
         {
             if (string.IsNullOrEmpty(request.PlayerName))
             {
                 throw new ArgumentException(nameof(request.PlayerName));
             }
 
-            var roomName = RoomNameGenerator.GenerateUniqueRoomName(lobby);
-
-            if (!lobby.TryAddRoom(roomName))
-            {
-                throw new HubException("Failed to create a room with room name " + roomName);
-            }
+            var roomName = RoomNameGenerator.GenerateUniqueRoomName(await lobby.GetRoomNames());
 
             return roomName;
-        }
-
-        public void RegisterConnection(ConnectionContext model)
-        {
-            if (!lobby.TryAddConnectionContext(Context.ConnectionId, model))
-            {
-                throw new HubException("Context for ID " + Context.ConnectionId + " already exists");
-            }
         }
 
         // Securely generates random room names from a preset character set and length.
         private class RoomNameGenerator
         {
-            private const string VALID_CHARACTERS = "ABCDEFGHJKLMNPQRTUVWXYZ2346789";
-            private const int ROOM_NAME_LENGTH = 5;
+            private const string ValidCharacters = "ABCDEFGHJKLMNPQRTUVWXYZ2346789";
+            private const int RoomNameLength = 5;
+            private const int MaxRetries = 1000;
 
-            public static string GenerateUniqueRoomName(Lobby lobbyDetails)
+            public static string GenerateUniqueRoomName(ICollection<string> roomNames)
             {
                 string roomName;
+                int retries = 0;
 
-                do
-                {
-                    roomName = GenerateRoomName();
-                } while (lobbyDetails.TryGetPlayerNames(roomName, out _));
+				do
+				{
+					roomName = GenerateRoomName();
+					retries++;
+				} while (roomNames.Contains(roomName) && retries < MaxRetries);
 
-                return roomName;
+				return roomName;
             }
 
             private static string GenerateRoomName()
@@ -151,11 +75,11 @@ namespace BombermanAspNet.Hubs
                 {
                     byte[] buffer = new byte[sizeof(uint)];
 
-                    for (int i = 0; i < ROOM_NAME_LENGTH; i++)
+                    for (int i = 0; i < RoomNameLength; i++)
                     {
                         rng.GetBytes(buffer);
                         uint randomValue = BitConverter.ToUInt32(buffer);
-                        char randomValidCharacter = VALID_CHARACTERS[(int)(randomValue % (uint)VALID_CHARACTERS.Length)];
+                        char randomValidCharacter = ValidCharacters[(int)(randomValue % (uint)ValidCharacters.Length)];
                         stringBuilder.Append(randomValidCharacter);
                     }
                 }
@@ -165,13 +89,7 @@ namespace BombermanAspNet.Hubs
         }
     }
 
-    public class AddPlayerToRoomRequest
-    {
-        public string PlayerName { get; set; }
-        public string RoomName { get; set; }
-    }
-
-    public class CreateRoomRequest
+    public class GenerateRoomNameRequest
     {
         public string PlayerName { get; set; }
     }

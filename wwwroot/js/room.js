@@ -23,7 +23,6 @@ const BombCode = 3;
 
 // Set up the SignalR connections to the lobby and chat hubs.
 const gameConnection = new signalR.HubConnectionBuilder().withUrl("/gameHub").build();
-const lobbyConnection = new signalR.HubConnectionBuilder().withUrl("/lobbyHub").build();
 const chatConnection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
 
 // On page load, attempt to pre-fill the player name input from browser cookies.
@@ -50,32 +49,16 @@ gameConnection.on("ReceiveGameState", function (state) {
     drawGame(state);
 });
 
-gameConnection.on("ReceiveWinner", function (name) {
-    addSystemChatMessage(name + " has won! Do something better with your day now.");
-
-    lobbyConnection.stop().then(function () {
-        alert("You have been disconnected from room " + roomName);
-        console.log("You have been disconnected from room " + roomName);
-    });
-})
-
-////////////////////////////////////////////////////////////////
-// Event Handlers for the SignalR hub connection of the lobby //
-////////////////////////////////////////////////////////////////
-
-lobbyConnection.start().then(function () {
-    lobbyConnection.invoke("RegisterConnection", { roomName, playerName }).catch(function (err) {
-        return handleError(err);
-    });
-
-    lobbyConnection.invoke("JoinLobbyRoom", roomName).catch(function (err) {
-        return handleError(err);
-    });
+gameConnection.on("ReceiveWinner", function (winnerName) {
+    addSystemChatMessage(winnerName + " has won! Do something better with your day now.");
 });
 
-lobbyConnection.on("PlayerDisconnected", function (disconnectedPlayerName) {
-    console.log("Received disconnection message from " + disconnectedPlayerName);
-    addSystemChatMessage(disconnectedPlayerName + " has disconnected.");
+gameConnection.on("ReceiveTie", function () {
+    addSystemChatMessage("It's a tie. Pathetic.");
+});
+
+gameConnection.on("ReceiveEmbarrassment", function () {
+    addSystemChatMessage("My guy. You're literally by yourself. How could this have happened?");
 });
 
 ///////////////////////////////////////////////////////////////
@@ -85,17 +68,12 @@ lobbyConnection.on("PlayerDisconnected", function (disconnectedPlayerName) {
 chatConnection.start().then(function () {
     chatConnection.invoke("JoinChatRoom", roomName).then(function () {
         chatConnection.invoke("GetPlayersInRoom", roomName).then(function (playerNames) {
-            let message = "Connected Players: ";
-            for (let i = 0; i < playerNames.length; i++) {
-                if (i != 0) {
-                    message += ", ";
-                }
-                message += playerNames[i];
-                if (playerNames[i] === playerName) {
-                    message += " (You)";
-                }
+            // Handle the case where the connection context has not yet been added for this player
+            if (!playerNames.includes(playerName)) {
+                playerNames.push(playerName);
             }
-            addSystemChatMessage(message);
+
+            addSystemChatMessage(createPlayerNamesMessage(playerNames));
         }).catch(function (err) {
             return handleError(err);
         });
@@ -112,6 +90,10 @@ chatConnection.start().then(function () {
 
 chatConnection.on("PlayerConnected", function (connectedPlayerName) {
     addSystemChatMessage(connectedPlayerName + " has connected.");
+});
+
+chatConnection.on("PlayerDisconnected", function (disconnectedPlayerName) {
+    addSystemChatMessage(disconnectedPlayerName + " has disconnected.");
 });
 
 chatConnection.on("ReceiveMessage", function (message, sender) {
@@ -286,6 +268,22 @@ function getPlayer(players) {
     }
 
     return null;
+}
+
+function createPlayerNamesMessage(playerNames) {
+    let message = "Connected Players: ";
+
+    for (let i = 0; i < playerNames.length; i++) {
+        if (i != 0) {
+            message += ", ";
+        }
+        message += playerNames[i];
+        if (playerNames[i] === playerName) {
+            message += " (You)";
+        }
+    }
+
+    return message;
 }
 
 function drawBlock(col, row) {

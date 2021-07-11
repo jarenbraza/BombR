@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BombermanAspNet.Data
+namespace BombermanAspNet.Models
 {
 	public class Explosion : IComparable<Explosion>
     {

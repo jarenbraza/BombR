@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace BombermanAspNet.Data
+namespace BombermanAspNet.Constants
 {
     public static class GameConstants
     {

@@ -14,10 +14,10 @@ document.addEventListener("DOMContentLoaded", function (event) {
 
     // If cookies are enabled and the user has previously created a player name, place it back into the input.
     if (areCookiesEnabled()) {
-        const playerName = readCookie("playerName");
+        const previousPlayerName = readCookie("playerName");
 
-        if (playerName != null) {
-            document.getElementById("playerNameInput").value = playerName;
+        if (previousPlayerName != null) {
+            document.getElementById("playerNameInput").value = previousPlayerName;
         }
     }
 });
@@ -39,9 +39,10 @@ lobbyConnection.start().then(function () {
 // Otherwise, it updates the associated table row with this model.
 // If there are no players in the room, the entire row is removed.
 // Hides the "no rooms" placeholder.
-lobbyConnection.on("UpdateRoom", function (model) {
-    const roomName = model.roomName;
-    const playerNames = model.playerNames;
+lobbyConnection.on("UpdateRoomInTable", function (room) {
+    console.log("Updating room " + room + " with players " + room.playerNames.join(", "));
+    const roomName = room.roomName;
+    const playerNames = room.playerNames;
 
     let roomRow = document.getElementById(roomName);
     let roomNameTd = document.getElementById(roomName + "-roomName");
@@ -85,19 +86,6 @@ lobbyConnection.on("UpdateRoom", function (model) {
     }
 });
 
-// Checks whether cookies are enabled for the browser.
-// If so, then a cookie is generated and the client is redirected without query parameters.
-// Otherwise, the client is redirected with query parameters.
-lobbyConnection.on("RedirectToRoom", function (roomName, playerName) {
-    if (areCookiesEnabled()) {
-        createCookie("playerName", playerName, 1);
-        location.replace(window.location.href + "room/" + roomName);
-    }
-    else {
-        location.replace(window.location.href + "room/" + roomName + "?playerName=" + playerName);
-    }
-});
-
 //////////////////////////////////////////
 // Event Handlers for document elements //
 //////////////////////////////////////////
@@ -127,9 +115,7 @@ document.getElementById("joinRoomButton").addEventListener("click", function (ev
     const roomName = document.getElementById("joinRoomInput").value;
     const playerName = document.getElementById("playerNameInput").value;
 
-    lobbyConnection.invoke("AddPlayerToRoom", { playerName, roomName }).catch(function (err) {
-        return handleError(err);
-    });
+    validateRedirectToRoom(roomName, playerName);
 
     event.preventDefault();
 });
@@ -148,10 +134,8 @@ document.getElementById("createRoomButton").addEventListener("click", function (
 
     const playerName = document.getElementById("playerNameInput").value;
 
-    lobbyConnection.invoke("CreateRoom", { playerName }).then(function (roomName) {
-        lobbyConnection.invoke("AddPlayerToRoom", { playerName, roomName }).catch(function (err) {
-            return handleError(err);
-        });
+    lobbyConnection.invoke("GenerateRoomName", { playerName }).then(function (roomName) {
+        validateRedirectToRoom(roomName, playerName);
     }).catch(function (err) {
         return handleError(err);
     });
@@ -168,3 +152,44 @@ document.getElementById("joinRoomInput").addEventListener("click", function (eve
 document.getElementById("playerNameInput").addEventListener("click", function (event) {
     unmarkAsInvalid(event.target.id);
 });
+
+// Restricts valid inputs for player name
+document.getElementById('playerNameInput').addEventListener('keydown', function (event) {
+    const maxLength = 12;
+
+    if (event.code === 'Enter' || event.code === 'Space') {
+        event.preventDefault();
+    }
+    else if (isAlphaNumeric(event.key) && this.value.length >= maxLength && !event.ctrlKey) {
+        this.value = this.value.substr(0, maxLength);
+        event.preventDefault();
+	}
+
+    event.stopPropagation();
+});
+
+/////////////
+// Utility //
+/////////////
+
+// Checks whether cookies are enabled for the browser.
+// If so, then a cookie is generated and the client is redirected without query parameters.
+// Otherwise, the client is redirected with query parameters.
+function validateRedirectToRoom(roomName, playerName) {
+    lobbyConnection.invoke("ValidateJoin", roomName, playerName).then(function (isValidJoin) {
+        if (isValidJoin) {
+            if (areCookiesEnabled()) {
+                createCookie("playerName", playerName, 1);
+                location.replace(window.location.href + "room/" + roomName);
+            }
+            else {
+                location.replace(window.location.href + "room/" + roomName + "?playerName=" + playerName);
+            }
+        }
+        else {
+            alert("Player " + playerName + " already exists in room " + roomName);
+		}
+    }).catch(function (err) {
+        return handleError(err);
+    });
+}

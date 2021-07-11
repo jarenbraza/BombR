@@ -1,4 +1,6 @@
-﻿using BombermanAspNet.Data;
+﻿using BombermanAspNet.Constants;
+using BombermanAspNet.Models;
+using BombermanAspNet.Utilities;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Diagnostics;
@@ -8,12 +10,24 @@ namespace BombermanAspNet.Hubs
 {
 	public class GameHub : Hub
     {
-        private readonly BombermanGame game;
+        private readonly GameUtils game;
+        private readonly LobbyUtils lobby;
 
-        public GameHub(BombermanGame game)
+        public GameHub(GameUtils game, LobbyUtils lobby)
         {
             this.game = game;
+            this.lobby = lobby;
         }
+
+        public async override Task OnDisconnectedAsync(Exception exception)
+		{
+            var context = await lobby.PopConnectionContext(Context.ConnectionId).ConfigureAwait(false);
+
+            if (context != null)
+            {
+                await lobby.UpdateLobbyForRoom(context.RoomName).ConfigureAwait(false);
+            }
+		}
 
         public async Task JoinGameRoom(string roomName, string playerName)
         {
@@ -29,8 +43,10 @@ namespace BombermanAspNet.Hubs
 
             try
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
-                game.JoinRoom(roomName, playerName);
+                await Groups.AddToGroupAsync(Context.ConnectionId, roomName).ConfigureAwait(false);
+                await game.JoinRoom(roomName, playerName).ConfigureAwait(false);
+                await lobby.AddConnectionContext(Context.ConnectionId, new ConnectionContext(roomName, playerName)).ConfigureAwait(false);
+                await lobby.UpdateLobbyForRoom(roomName).ConfigureAwait(false);
             }
             catch
             {
@@ -46,14 +62,15 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(roomName));
             }
 
-            try
-            {
-                await Clients.Group(roomName).SendAsync("ReceiveGameState", game.GetGameState(roomName));
-            }
-            catch
+            var state = await game.GetGameState(roomName).ConfigureAwait(false);
+
+            if (state == null)
             {
                 Debug.WriteLine("Unable to update game state for room " + roomName);
-                throw;
+            }
+            else
+            {
+                await Clients.Group(roomName).SendAsync("ReceiveGameState", state).ConfigureAwait(false);
             }
         }
 
@@ -76,8 +93,9 @@ namespace BombermanAspNet.Hubs
 
             try
 			{
-                game.HandleMove(roomName, playerName, keyCode);
-                await Clients.Group(roomName).SendAsync("ReceiveGameState", game.GetGameState(roomName));
+                await game.HandleMove(roomName, playerName, keyCode).ConfigureAwait(false);
+                var state = await game.GetGameState(roomName).ConfigureAwait(false);
+                await Clients.Group(roomName).SendAsync("ReceiveGameState", state).ConfigureAwait(false);
             }
             catch
             {

@@ -1,10 +1,11 @@
-﻿namespace BombermanAspNet.Data
+﻿namespace BombermanAspNet.Models
 {
 	public class Player
     {
         private static int previousRow = GameState.RowCount - 2;
         private static int previousCol = 1;
 
+        public string ConnectionId { get; set; }
         public int Row { get; set; }
         public int Col { get; set; }
         public int RemainingBombs { get; set; }

@@ -1,4 +1,4 @@
-using BombermanAspNet.Data;
+using BombermanAspNet.Utilities;
 using BombermanAspNet.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,9 +21,13 @@ namespace BombermanAspNet
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
+            services.AddStackExchangeRedisCache(options => {
+                options.Configuration = Configuration.GetConnectionString("Redis");
+                options.InstanceName = "BombR_";
+            });
             services.AddSignalR(options => options.EnableDetailedErrors = true);
-            services.AddSingleton<BombermanGame>();
-            services.AddSingleton<Lobby>();
+            services.AddSingleton<GameUtils>();
+            services.AddSingleton<LobbyUtils>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

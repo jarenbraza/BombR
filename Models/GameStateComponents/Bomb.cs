@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BombermanAspNet.Data
+namespace BombermanAspNet.Models
 {
 	public class Bomb : IComparable<Bomb>
     {
@@ -10,15 +10,14 @@ namespace BombermanAspNet.Data
         {
             Expiration = DateTime.Now;
             Expiration = Expiration.AddMilliseconds(BombDurationInMilliseconds);
-            Row = player.Row;
-            Col = player.Col;
-            ExplosionDistance = player.ExplosionDistance;
+            Player = player;
         }
 
         public DateTime Expiration { get; set; }
-        public int Row { get; set; }
-        public int Col { get; set; }
-        public int ExplosionDistance { get; set; }
+        public Player Player { get; set; }
+        public int Row { get { return Player.Row; } }
+        public int Col { get { return Player.Col; } }
+        public int ExplosionDistance { get { return Player.ExplosionDistance; } }
 
         public bool IsExpired()
         {

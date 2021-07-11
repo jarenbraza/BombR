@@ -1,9 +1,10 @@
-﻿using System;
+﻿using BombermanAspNet.Constants;
+using System;
 using System.Collections.Generic;
 
-namespace BombermanAspNet.Data
+namespace BombermanAspNet.Models
 {
-    public class GameState
+	public class GameState
     {
         public const int RowCount = 13;
         public const int ColCount = 15;
@@ -13,7 +14,7 @@ namespace BombermanAspNet.Data
         public List<List<int>> Board { get; set; }
         public SortedSet<Bomb> Bombs { get; set; }
         public SortedSet<Explosion> Explosions { get; set; }
-        public bool HasAnnouncedWinner { get; set; }
+        public bool HasWinner { get; set; }
 
         public GameState()
         {
@@ -21,7 +22,7 @@ namespace BombermanAspNet.Data
             Board = new();
             Bombs = new();
             Explosions = new();
-            HasAnnouncedWinner = false;
+            HasWinner = false;
 
             for (int r = 0; r < RowCount; r++)
             {
@@ -49,15 +50,13 @@ namespace BombermanAspNet.Data
             }
         }
 
-		// Hard coded safe placements of walls
-		private static bool IsSafeWallPlacement(int row, int col)
+        // Hard coded safe placements of walls
+        private static bool IsSafeWallPlacement(int row, int col)
         {
             return (row != 1 || (col > 2 && col < ColCount - 3))
                 && (row != 2 || (col > 1 && col < ColCount - 2))
                 && (row != RowCount - 3 || (col > 1 && col < ColCount - 2))
                 && (row != RowCount - 2 || (col > 2 && col < ColCount - 3));
         }
-
-
     }
 }
