@@ -8,6 +8,7 @@
 let roomName = "";   
 let playerName = "";
 let gameState = {};
+let isConnectedToGame = false;
 
 // Canvas Content
 const canvas = document.getElementById("GameCanvas");
@@ -40,6 +41,7 @@ gameConnection.start().then(function () {
         gameConnection.invoke("RefreshGameState", roomName).catch(function (err) {
             return handleError(err);
         });
+        isConnectedToGame = true;
     }).catch(function (err) {
         return handleError(err);
     });
@@ -51,14 +53,20 @@ gameConnection.on("ReceiveGameState", function (state) {
 
 gameConnection.on("ReceiveWinner", function (winnerName) {
     addSystemChatMessage(winnerName + " has won! Do something better with your day now.");
+    isConnectedToGame = false;
+    gameConnection.stop();
 });
 
 gameConnection.on("ReceiveTie", function () {
     addSystemChatMessage("It's a tie. Pathetic.");
+    isConnectedToGame = false;
+    gameConnection.stop();
 });
 
 gameConnection.on("ReceiveEmbarrassment", function () {
     addSystemChatMessage("My guy. You're literally by yourself. How could this have happened?");
+    isConnectedToGame = false;
+    gameConnection.stop();
 });
 
 ///////////////////////////////////////////////////////////////
@@ -66,7 +74,7 @@ gameConnection.on("ReceiveEmbarrassment", function () {
 ///////////////////////////////////////////////////////////////
 
 chatConnection.start().then(function () {
-    chatConnection.invoke("JoinChatRoom", roomName).then(function () {
+    chatConnection.invoke("JoinChatRoom", roomName, playerName).then(function () {
         chatConnection.invoke("GetPlayersInRoom", roomName).then(function (playerNames) {
             // Handle the case where the connection context has not yet been added for this player
             if (!playerNames.includes(playerName)) {
@@ -133,7 +141,7 @@ document.addEventListener('keydown', function (event) {
         return;
     }
 
-    if (isGameKeyCode(event.code)) {
+    if (isGameKeyCode(event.code) && isConnectedToGame) {
         gameConnection.invoke("SendPlayerMove", roomName, playerName, event.keyCode).catch(function (err) {
             return handleError(err);
         });

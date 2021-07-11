@@ -1,4 +1,5 @@
-﻿using BombermanAspNet.Utilities;
+﻿using BombermanAspNet.Models;
+using BombermanAspNet.Utilities;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
@@ -9,20 +10,16 @@ namespace BombermanAspNet.Hubs
 {
     public class ChatHub : Hub
     {
-        private readonly LobbyUtils lobby;
+        private readonly ChatUtils chat;
 
-        public ChatHub(LobbyUtils lobby)
+        public ChatHub(ChatUtils chat)
         {
-            this.lobby = lobby;
+            this.chat = chat;
         }
 
-        // TODO: This will (almost) never work.
-        // GameHub MUST remove connection context to notify lobby on disconnect.
-        // Otherwise, we would never be able to resolve a broken connection to the game room.
-        // To resolve, separate chat and lobby connection contexts under a different key.
         public async override Task OnDisconnectedAsync(Exception exception)
         {
-            var context = await lobby.GetConnectionContext(Context.ConnectionId);
+            var context = await chat.PopConnectionContext(Context.ConnectionId);
 
             if (context != null)
             {
@@ -34,14 +31,32 @@ namespace BombermanAspNet.Hubs
             }
         }
 
-        // TODO: During separation of chat and lobby connection contexts, persist player name to the chat context.
-        public async Task JoinChatRoom(string roomName)
+        public async Task<List<string>> GetPlayersInRoom(string roomName)
         {
             if (string.IsNullOrEmpty(roomName))
             {
                 throw new ArgumentException(nameof(roomName));
             }
 
+            var playerNames = await chat.GetPlayerNamesInRoom(roomName);
+
+            if (playerNames == null)
+            {
+                throw new HubException("Players in " + roomName + " were not found");
+            }
+
+            return playerNames;
+        }
+
+        // TODO: During separation of chat and lobby connection contexts, persist player name to the chat context.
+        public async Task JoinChatRoom(string roomName, string playerName)
+        {
+            if (string.IsNullOrEmpty(roomName))
+            {
+                throw new ArgumentException(nameof(roomName));
+            }
+
+            await chat.AddConnectionContext(Context.ConnectionId, new ConnectionContext(roomName, playerName));
             await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
         }
 
@@ -78,23 +93,6 @@ namespace BombermanAspNet.Hubs
             }
 
             await Clients.Group(roomName).SendAsync("ReceiveMessage", message, sender).ConfigureAwait(false);
-        }
-
-        public async Task<List<string>> GetPlayersInRoom(string roomName)
-        {
-            if (string.IsNullOrEmpty(roomName))
-            {
-                throw new ArgumentException(nameof(roomName));
-            }
-
-            var playerNames = await lobby.GetPlayerNames();
-
-            if (playerNames == null)
-            {
-                throw new HubException("Players in " + roomName + " were not found");
-            }
-
-            return playerNames;
         }
     }
 }

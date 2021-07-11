@@ -21,11 +21,15 @@ namespace BombermanAspNet
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
+
             services.AddStackExchangeRedisCache(options => {
                 options.Configuration = Configuration.GetConnectionString("Redis");
                 options.InstanceName = "BombR_";
             });
+
             services.AddSignalR(options => options.EnableDetailedErrors = true);
+
+            services.AddSingleton<ChatUtils>();
             services.AddSingleton<GameUtils>();
             services.AddSingleton<LobbyUtils>();
         }

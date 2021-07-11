@@ -38,5 +38,20 @@ namespace BombermanAspNet.Extensions
 
 			return JsonSerializer.Deserialize<T>(jsonValue);
 		}
+
+		public static async Task<T> PopRecordAsync<T>(
+			this IDistributedCache cache,
+			string recordId)
+		{
+			var jsonValue = await cache.GetStringAsync(recordId);
+
+			if (jsonValue == null)
+			{
+				return default;
+			}
+
+			await cache.RemoveAsync(recordId);
+			return JsonSerializer.Deserialize<T>(jsonValue);
+		}
 	}
 }

@@ -40,7 +40,6 @@ lobbyConnection.start().then(function () {
 // If there are no players in the room, the entire row is removed.
 // Hides the "no rooms" placeholder.
 lobbyConnection.on("UpdateRoomInTable", function (room) {
-    console.log("Updating room " + room + " with players " + room.playerNames.join(", "));
     const roomName = room.roomName;
     const playerNames = room.playerNames;
 

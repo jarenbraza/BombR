@@ -25,6 +25,8 @@ namespace BombermanAspNet.Hubs
 
             if (context != null)
             {
+                await game.LeaveRoom(context.RoomName, context.PlayerName);
+                await RefreshGameState(context.RoomName);
                 await lobby.UpdateLobbyForRoom(context.RoomName).ConfigureAwait(false);
             }
 		}

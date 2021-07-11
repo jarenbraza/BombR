@@ -4,7 +4,6 @@ using BombermanAspNet.Hubs;
 using BombermanAspNet.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
-using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
@@ -77,6 +76,21 @@ namespace BombermanAspNet.Utilities
 				}
 
                 state.Players.Add(playerName, new Player());
+            }
+
+            await SaveGameState(roomName, state);
+        }
+
+        public async Task LeaveRoom(string roomName, string playerName)
+        {
+            var state = await GetGameState(roomName);
+
+            lock (gameStateLock)
+            {
+                if (state != null)
+                {
+                    state.Players.Remove(playerName);
+                }
             }
 
             await SaveGameState(roomName, state);

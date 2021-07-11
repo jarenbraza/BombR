@@ -19,24 +19,23 @@ namespace BombermanAspNet.Utilities
 		{
             this.cache = cache;
             this.lobbyHub = lobbyHub;
-		}
+        }
+
+        public async Task<Lobby> GetLobby()
+        {
+            return (await cache.GetRecordAsync<Lobby>(CacheConstants.LobbyKey).ConfigureAwait(false)) ?? new Lobby();
+        }
+
+        public async Task SaveLobby(Lobby lobby)
+        {
+            await cache.SetRecordAsync(CacheConstants.LobbyKey, lobby).ConfigureAwait(false);
+        }
 
         public async Task UpdateLobbyForRoom(string roomName)
         {
             var room = await GetRoom(roomName).ConfigureAwait(false);
             await lobbyHub.Clients.All.SendAsync("UpdateRoomInTable", room).ConfigureAwait(false);
         }
-
-        public async Task<Lobby> GetLobby()
-		{
-            var lobby = await cache.GetRecordAsync<Lobby>(CacheConstants.LobbyKey).ConfigureAwait(false);
-            return lobby ?? new Lobby();
-        }
-
-        public async Task SaveLobby(Lobby lobby)
-		{
-            await cache.SetRecordAsync(CacheConstants.LobbyKey, lobby).ConfigureAwait(false);
-		}
 
         public async Task AddConnectionContext(string connectionId, ConnectionContext context)
         {
