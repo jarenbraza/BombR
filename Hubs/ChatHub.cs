@@ -29,9 +29,9 @@ namespace BombermanAspNet.Hubs
                 await Clients.OthersInGroup(context.RoomName).SendAsync("PlayerDisconnected", context.PlayerName).ConfigureAwait(false);
             }
             else
-			{
+            {
                 Debug.WriteLine("Could not find context for " + Context.ConnectionId);
-			}
+            }
         }
 
         // TODO: During separation of chat and lobby connection contexts, persist player name to the chat context.
