@@ -106,6 +106,7 @@ namespace BombermanAspNet.Utilities
         public async Task HandleMove(string roomName, string playerName, int keyCode)
         {
             var state = await GetGameState(roomName);
+            bool placedBombSuccessfully = false;
 
             lock (gameStateLock)
             {
@@ -143,6 +144,7 @@ namespace BombermanAspNet.Utilities
                 {
                     state.Bombs.Add(new Bomb(player));
                     hasUpdatedState = true;
+                    placedBombSuccessfully = true;
                 }
 
                 if (hasUpdatedState && IsExplosion(player.Row, player.Col, state))
@@ -153,6 +155,11 @@ namespace BombermanAspNet.Utilities
             }
 
             await SaveGameState(roomName, state);
+
+            if (placedBombSuccessfully)
+            {
+                await gameHub.Clients.Group(roomName).SendAsync("PlaySoundForPlacingBomb");
+            }
         }
 
         private async void HandleExplosionsInAllRooms(object sender, ElapsedEventArgs e)

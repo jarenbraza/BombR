@@ -69,6 +69,11 @@ gameConnection.on("ReceiveEmbarrassment", function () {
     gameConnection.stop();
 });
 
+gameConnection.on("PlaySoundForPlacingBomb", function () {
+    stopSound("bombplacement");
+    playSound("bombplacement");
+});
+
 ///////////////////////////////////////////////////////////////
 // Event Handlers for the SignalR hub connection of the chat //
 ///////////////////////////////////////////////////////////////
