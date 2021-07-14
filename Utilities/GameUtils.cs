@@ -4,6 +4,7 @@ using BombermanAspNet.Hubs;
 using BombermanAspNet.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
@@ -142,7 +143,12 @@ namespace BombermanAspNet.Utilities
                 }
                 else if (IsPlaceBomb(keyCode) && IsValidMove(player.Row, player.Col, playerName, ref state))
                 {
-                    state.Bombs.Add(new Bomb(player));
+                    state.Bombs.Add(new Bomb {
+                        Expiration = DateTime.Now.AddMilliseconds(GameConstants.BombDurationInMilliseconds),
+                        Row = player.Row,
+                        Col = player.Col,
+                        ExplosionDistance = player.ExplosionDistance
+                    });
                     hasUpdatedState = true;
                     placedBombSuccessfully = true;
                 }

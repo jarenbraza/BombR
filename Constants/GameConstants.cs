@@ -11,8 +11,9 @@ namespace BombermanAspNet.Constants
         public const int Bomb = 3;
         public const int BrokenWall = 4;
 
-        // Used for game logic of checking all directions
+        // Game logic
         public static readonly int[,] Directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+        public const int BombDurationInMilliseconds = 3000;
 
         // Key codes used in game
         public const int KeyCodeW = 87;
