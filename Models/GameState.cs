@@ -4,12 +4,14 @@ using System.Collections.Generic;
 
 namespace BombermanAspNet.Models
 {
+    /// <summary>Represents a state of the game.</summary>
     public class GameState
     {
         public const int RowCount = 13;
         public const int ColCount = 15;
         private readonly Random random = new();
 
+        // TODO: For low number of players, list is much faster. Change to list.
         public Dictionary<string, Player> Players { get; set; }
         public List<List<int>> Board { get; set; }
         public SortedSet<Bomb> Bombs { get; set; }

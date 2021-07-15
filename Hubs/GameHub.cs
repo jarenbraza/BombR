@@ -47,7 +47,11 @@ namespace BombermanAspNet.Hubs
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomName).ConfigureAwait(false);
                 await game.JoinRoom(roomName, playerName).ConfigureAwait(false);
-                await lobby.AddConnectionContext(Context.ConnectionId, new ConnectionContext(roomName, playerName)).ConfigureAwait(false);
+                await lobby.AddConnectionContext(Context.ConnectionId, new ConnectionContext
+                {
+                    RoomName = roomName,
+                    PlayerName = playerName
+                }).ConfigureAwait(false);
                 await lobby.UpdateLobbyForRoom(roomName).ConfigureAwait(false);
             }
             catch

@@ -56,7 +56,11 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(roomName));
             }
 
-            await chat.AddConnectionContext(Context.ConnectionId, new ConnectionContext(roomName, playerName));
+            await chat.AddConnectionContext(Context.ConnectionId, new ConnectionContext
+            {
+                RoomName = roomName,
+                PlayerName = playerName
+            });
             await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
         }
 

@@ -1,14 +1,14 @@
 ﻿namespace BombermanAspNet.Models
 {
+    /// <summary>
+    /// Represents details required for tracking a connection.
+    /// </summary>
     public class ConnectionContext
     {
+        /// <summary>The name of the room associated with the connection.</summary>
         public string RoomName { get; set; }
-        public string PlayerName { get; set; }
 
-        public ConnectionContext(string roomName, string playerName)
-        {
-            RoomName = roomName;
-            PlayerName = playerName;
-        }
+        /// <summary>The name of the player associated with the connection.</summary>
+        public string PlayerName { get; set; }
     }
 }
