@@ -2,7 +2,7 @@
 
 namespace BombermanAspNet.Models
 {
-	public class Explosion : IComparable<Explosion>
+    public class Explosion : IComparable<Explosion>
     {
         /// <summary>The <see cref="DateTime"/> when the <see cref="Explosion"/> will expire.</summary>
         public DateTime Expiration { get; set; }

@@ -13,7 +13,7 @@ using System.Timers;
 
 namespace BombermanAspNet.Utilities
 {
-	public class GameUtils
+    public class GameUtils
     {
         private const double IntervalInMilliseconds = 33;  // 30 FPS
 
@@ -32,10 +32,10 @@ namespace BombermanAspNet.Utilities
             this.gameHub = gameHub;
             this.lobby = lobby;
             timer = new Timer(IntervalInMilliseconds);
-			timer.Elapsed += HandleBombsInAllRooms;
-			timer.Elapsed += HandleExplosionsInAllRooms;
-			timer.Elapsed += HandleWinnersInAllRooms;
-			timer.AutoReset = true;
+            timer.Elapsed += HandleBombsInAllRooms;
+            timer.Elapsed += HandleExplosionsInAllRooms;
+            timer.Elapsed += HandleWinnersInAllRooms;
+            timer.AutoReset = true;
             timer.Enabled = true;
         }
 
@@ -72,9 +72,9 @@ namespace BombermanAspNet.Utilities
             lock (gameStateLock)
             {
                 if (state == null)
-				{
+                {
                     state = new GameState();
-				}
+                }
 
                 state.Players.Add(playerName, new Player());
             }
@@ -115,9 +115,9 @@ namespace BombermanAspNet.Utilities
 
                 // Do not allow dead players to move
                 if (!player.IsAlive)
-				{
+                {
                     return;
-				}
+                }
 
                 bool hasUpdatedState = false;
 
@@ -329,7 +329,7 @@ namespace BombermanAspNet.Utilities
         }
 
         private async void HandleWinnersInAllRooms(object sender, ElapsedEventArgs e)
-		{
+        {
             foreach (var roomName in await lobby.GetRoomNames())
             {
                 var state = await GetGameState(roomName);
@@ -355,7 +355,7 @@ namespace BombermanAspNet.Utilities
                         state.HasWinner = true;
                     }
                     else if (livingPlayers == 0)
-					{
+                    {
                         lastAlive = "Tie!";
                         state.HasWinner = true;
                     }
@@ -380,7 +380,7 @@ namespace BombermanAspNet.Utilities
                     }
                 }
             }
-		}
+        }
 
         private string GetPlayerName(int row, int col, ref GameState state)
         {
@@ -411,17 +411,17 @@ namespace BombermanAspNet.Utilities
         }
 
         private bool IsExplosion(int row, int col, in GameState gameState)
-		{
+        {
             foreach (var explosion in gameState.Explosions)
-			{
+            {
                 if (explosion.Row == row && explosion.Col == col)
-				{
+                {
                     return true;
-				}
-			}
+                }
+            }
 
             return false;
-		}
+        }
 
         private Bomb GetBomb(int row, int col, in GameState state)
         {
@@ -481,9 +481,9 @@ namespace BombermanAspNet.Utilities
         }
 
         private static string GetGameKey(string roomName)
-		{
+        {
             return nameof(GameState) + "_" + roomName;
-		}
+        }
 
         bool IsValidMove(int row, int col, string playerName, ref GameState state)
         {

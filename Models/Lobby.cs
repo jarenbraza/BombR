@@ -2,8 +2,8 @@
 
 namespace BombermanAspNet.Models
 {
-	public class Lobby
-	{
-		public Dictionary<string, ConnectionContext> ConnectionContexts { get; set; } = new();
-	}
+    public class Lobby
+    {
+        public Dictionary<string, ConnectionContext> ConnectionContexts { get; set; } = new();
+    }
 }

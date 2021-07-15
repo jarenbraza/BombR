@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace BombermanAspNet.Models
 {
-	public class GameState
+    public class GameState
     {
         public const int RowCount = 13;
         public const int ColCount = 15;

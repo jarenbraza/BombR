@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace BombermanAspNet.Models
 {
-	public class Chat
-	{
-		public Dictionary<string, ConnectionContext> ConnectionContexts { get; set; } = new();
-	}
+    public class Chat
+    {
+        public Dictionary<string, ConnectionContext> ConnectionContexts { get; set; } = new();
+    }
 }
