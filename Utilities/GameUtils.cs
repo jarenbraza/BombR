@@ -249,7 +249,11 @@ namespace BombermanAspNet.Utilities
         private void ExplodeBomb(ref GameState state, in Bomb bomb)
         {
             state.Bombs.Remove(bomb);
-            state.Explosions.Add(new Explosion(bomb.Row, bomb.Col));
+            state.Explosions.Add(new Explosion {
+                Expiration = DateTime.Now.AddMilliseconds(GameConstants.ExplosionDurationInMilliseconds),
+                Row = bomb.Row,
+                Col = bomb.Col
+            });
 
             for (int i = 0; i < GameConstants.Directions.GetLength(0); i++)
             {
@@ -263,7 +267,12 @@ namespace BombermanAspNet.Utilities
                         break;
                     }
 
-                    state.Explosions.Add(new Explosion(explosionRow, explosionCol));
+                    state.Explosions.Add(new Explosion
+                    {
+                        Expiration = DateTime.Now.AddMilliseconds(GameConstants.ExplosionDurationInMilliseconds),
+                        Row = explosionRow,
+                        Col = explosionCol
+                    });
                 }
             }
         }
@@ -277,7 +286,12 @@ namespace BombermanAspNet.Utilities
 
             if (IsBreakable(row, col, state))
             {
-                state.Explosions.Add(new Explosion(row, col));
+                state.Explosions.Add(new Explosion
+                {
+                    Expiration = DateTime.Now.AddMilliseconds(GameConstants.ExplosionDurationInMilliseconds),
+                    Row = row,
+                    Col = col
+                });
                 state.Board[row][col] = GameConstants.BrokenWall;
                 return false;
             }

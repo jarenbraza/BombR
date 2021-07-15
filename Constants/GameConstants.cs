@@ -14,6 +14,7 @@ namespace BombermanAspNet.Constants
         // Game logic
         public static readonly int[,] Directions = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
         public const int BombDurationInMilliseconds = 3000;
+        public const long ExplosionDurationInMilliseconds = 1000;
 
         // Key codes used in game
         public const int KeyCodeW = 87;
