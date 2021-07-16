@@ -3,8 +3,11 @@
     /// <summary>Represents a player in the game.</summary>
     public class Player
     {
-        private static int previousRow = GameState.RowCount - 2;
-        private static int previousCol = 1;
+        internal static int previousRow = GameState.RowCount - 2;
+        internal static int previousCol = 1;
+
+        /// <summary>The name of the <see cref="Player"/>.</summary>
+        public string Name { get; set; }
 
         /// <summary>The row of the <see cref="Player"/> on the game board.</summary>
         public int Row { get; set; }
@@ -23,35 +26,24 @@
 
         public Player()
         {
-            RemainingBombs = 1;
-            ExplosionDistance = 2;
-            IsAlive = true;
-            Row = GetNextRow();
-            Col = GetNextCol();
             previousRow = Row;
             previousCol = Col;
         }
 
         // TODO: Refactor into utility
-        public int GetNextRow()
+        internal static int GetNextRow()
         {
-            if (previousCol == 1)
-            {
-                return 1;
-            }
-
-            return GameState.RowCount - 2;
+            var nextRow = (previousCol == 1) ? 1 :GameState.RowCount - 2;
+            previousRow = nextRow;
+            return nextRow;
         }
 
         // TODO: Refactor into utility
-        public int GetNextCol()
+        internal static int GetNextCol()
         {
-            if (previousRow == 1)
-            {
-                return GameState.ColCount - 2;
-            }
-
-            return 1;
+            var nextCol = (previousRow == 1) ? GameState.ColCount - 2 : 1;
+            previousCol = nextCol;
+            return nextCol;
         }
     }
 }

@@ -12,8 +12,8 @@ namespace BombermanAspNet.Utilities
 	public class LobbyUtils
     {
         private readonly IDistributedCache cache;
-        private readonly object lobbyLock = new();
         private readonly IHubContext<LobbyHub> lobbyHub;
+        private readonly object lobbyLock = new();
 
         public LobbyUtils(IDistributedCache cache, IHubContext<LobbyHub> lobbyHub)
 		{

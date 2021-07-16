@@ -76,7 +76,7 @@ namespace BombermanAspNet.Utilities
                     state = new GameState();
                 }
 
-                state.Players.Add(playerName, new Player());
+                state.Players.Add(CreatePlayer(playerName));
             }
 
             await SaveGameState(roomName, state);
@@ -90,7 +90,7 @@ namespace BombermanAspNet.Utilities
             {
                 if (state != null)
                 {
-                    state.Players.Remove(playerName);
+                    state.Players.RemoveAll(player => player.Name.Equals(playerName));
                 }
             }
 
@@ -111,7 +111,7 @@ namespace BombermanAspNet.Utilities
 
             lock (gameStateLock)
             {
-                Player player = state.Players[playerName];
+                Player player = state.Players.Find(player => player.Name.Equals(playerName));
 
                 // Do not allow dead players to move
                 if (!player.IsAlive)
@@ -249,6 +249,7 @@ namespace BombermanAspNet.Utilities
         private void ExplodeBomb(ref GameState state, in Bomb bomb)
         {
             state.Bombs.Remove(bomb);
+
             state.Explosions.Add(new Explosion {
                 Expiration = DateTime.Now.AddMilliseconds(GameConstants.ExplosionDurationInMilliseconds),
                 Row = bomb.Row,
@@ -303,13 +304,7 @@ namespace BombermanAspNet.Utilities
                 ExplodeBomb(ref state, bomb);
             }
 
-            var playerName = GetPlayerName(row, col, ref state);
-
-            if (playerName != null)
-            {
-                state.Players[playerName].IsAlive = false;
-                Debug.WriteLine("Player " + playerName + " has died x_x");
-            }
+            TryKillPlayerAtLocation(ref state, row, col);
 
             return true;
         }
@@ -328,6 +323,7 @@ namespace BombermanAspNet.Utilities
             }
         }
 
+        // TODO: Probably some better way to handle logic here
         private async void HandleWinnersInAllRooms(object sender, ElapsedEventArgs e)
         {
             foreach (var roomName in await lobby.GetRoomNames())
@@ -343,20 +339,20 @@ namespace BombermanAspNet.Utilities
                 }
 
                 int livingPlayers = 0;
-                string lastAlive = default;
+                string nameOfLastLivingPlayer = "";
 
                 lock (gameStateLock)
                 {
-                    livingPlayers = state.Players.Where(p => p.Value.IsAlive).Count();
+                    livingPlayers = state.Players.Where(player => player.IsAlive).Count();
 
                     if (livingPlayers == 1 && state.Players.Count > 1)
                     {
-                        lastAlive = state.Players.Where(p => p.Value.IsAlive).First().Key;
+                        nameOfLastLivingPlayer = state.Players.Find(player => player.IsAlive).Name;
                         state.HasWinner = true;
                     }
                     else if (livingPlayers == 0)
                     {
-                        lastAlive = "Tie!";
+                        nameOfLastLivingPlayer = "Tie!";
                         state.HasWinner = true;
                     }
                 }
@@ -364,7 +360,7 @@ namespace BombermanAspNet.Utilities
                 if (state.HasWinner && livingPlayers == 1 && state.Players.Count > 1)
                 {
                     await SaveGameState(roomName, state);
-                    await gameHub.Clients.Group(roomName).SendAsync("ReceiveWinner", lastAlive);
+                    await gameHub.Clients.Group(roomName).SendAsync("ReceiveWinner", nameOfLastLivingPlayer);
                 }
                 else if (state.HasWinner && livingPlayers == 0)
                 {
@@ -382,32 +378,12 @@ namespace BombermanAspNet.Utilities
             }
         }
 
-        private string GetPlayerName(int row, int col, ref GameState state)
-        {
-            foreach (var playerName in state.Players.Keys)
-            {
-                var player = state.Players[playerName];
-
-                if (player.Row == row && player.Col == col)
-                {
-                    return playerName;
-                }
-            }
-
-            return null;
-        }
-
         private bool IsAnotherPlayerAliveAtPosition(string playerName, int row, int col, ref GameState state)
         {
-            string playerNameAtPosition = GetPlayerName(row, col, ref state);
+            // Do not consider the players themselves
+            var player = state.Players.Find(p => (p.Row == row) && (p.Col == col) && !p.Name.Equals(playerName));
 
-            // Do not consider the player themselves
-            if (playerNameAtPosition == null || playerNameAtPosition.Equals(playerName))
-            {
-                return false;
-            }
-
-            return state.Players[playerNameAtPosition].IsAlive;
+            return player != null && player.IsAlive;
         }
 
         private bool IsExplosion(int row, int col, in GameState gameState)
@@ -436,7 +412,7 @@ namespace BombermanAspNet.Utilities
             return null;
         }
 
-        private bool IsInBounds(int row, int col, in GameState state)
+        private static bool IsInBounds(int row, int col, in GameState state)
         {
             return (row >= 0)
                 && (col >= 0)
@@ -485,7 +461,7 @@ namespace BombermanAspNet.Utilities
             return nameof(GameState) + "_" + roomName;
         }
 
-        bool IsValidMove(int row, int col, string playerName, ref GameState state)
+        private bool IsValidMove(int row, int col, string playerName, ref GameState state)
         {
             if (!IsInBounds(row, col, state))
             {
@@ -503,6 +479,34 @@ namespace BombermanAspNet.Utilities
             }
 
             return state.Board[row][col] == GameConstants.Empty;
+        }
+
+        private static Player CreatePlayer(string name)
+        {
+            return new Player
+            {
+                Name = name,
+                RemainingBombs = 1,
+                ExplosionDistance = 2,
+                IsAlive = true,
+                Row = Player.GetNextRow(),
+                Col = Player.GetNextCol()
+            };
+        }
+
+        // TODO: Check if state actually changed
+        private static bool TryKillPlayerAtLocation(ref GameState state, int row, int col)
+        {
+            var player = state.Players.Find(p => (p.Row == row) && (p.Col == col));
+
+            if (player == null)
+            {
+                return false;
+            }
+
+            Debug.WriteLine("Player " + player.Name + " has died x_x");
+            player.IsAlive = false;
+            return true;
         }
     }
 }

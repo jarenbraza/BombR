@@ -11,8 +11,7 @@ namespace BombermanAspNet.Models
         public const int ColCount = 15;
         private readonly Random random = new();
 
-        // TODO: For low number of players, list is much faster. Change to list.
-        public Dictionary<string, Player> Players { get; set; }
+        public List<Player> Players { get; set; }
         public List<List<int>> Board { get; set; }
         public SortedSet<Bomb> Bombs { get; set; }
         public SortedSet<Explosion> Explosions { get; set; }

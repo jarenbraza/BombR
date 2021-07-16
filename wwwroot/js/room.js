@@ -182,7 +182,7 @@ function drawGame(state) {
 
     // Draw players
     const otherPlayers = getOtherPlayers(state.players);
-    const player = getPlayer(state.players)
+    const player = getPlayer(state.players);
 
     for (let i = 0; i < otherPlayers.length; i++) {
         const otherPlayer = otherPlayers[i];
@@ -260,11 +260,9 @@ function snapScrollToBottom() {
 function getOtherPlayers(players) {
     let arr = [];
 
-    for (const key in players) {
-        if (players.hasOwnProperty(key)) {
-            if (key !== playerName) {
-                arr.push(players[key]);
-            }
+    for (let i = 0; i < players.length; i++) {
+        if (players[i].name !== playerName) {
+            arr.push(players[i]);
         }
     }
 
@@ -272,11 +270,9 @@ function getOtherPlayers(players) {
 }
 
 function getPlayer(players) {
-    for (const key in players) {
-        if (players.hasOwnProperty(key)) {
-            if (key === playerName) {
-                return players[key];
-            }
+    for (let i = 0; i < players.length; i++) {
+        if (players[i].name === playerName) {
+            return players[i];
         }
     }
 
