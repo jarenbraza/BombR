@@ -1,5 +1,6 @@
 ﻿using BombermanAspNet.Constants;
 using BombermanAspNet.Models;
+using BombermanAspNet.Servers;
 using BombermanAspNet.Utilities;
 using Microsoft.AspNetCore.SignalR;
 using System;
@@ -8,14 +9,15 @@ using System.Threading.Tasks;
 
 namespace BombermanAspNet.Hubs
 {
+    /// <summary>The SignalR <see cref="Hub"/> for exposing event-based game interactions.</summary>
 	public class GameHub : Hub
     {
-        private readonly GameUtils game;
+        private readonly GameServer gameServer;
         private readonly LobbyUtils lobby;
 
-        public GameHub(GameUtils game, LobbyUtils lobby)
+        public GameHub(GameServer gameServer, LobbyUtils lobby)
         {
-            this.game = game;
+            this.gameServer = gameServer;
             this.lobby = lobby;
         }
 
@@ -25,7 +27,7 @@ namespace BombermanAspNet.Hubs
 
             if (context != null)
             {
-                await game.LeaveRoom(context.RoomName, context.PlayerName);
+                await gameServer.LeaveRoom(context.RoomName, context.PlayerName);
                 await RefreshGameState(context.RoomName);
                 await lobby.UpdateLobbyForRoom(context.RoomName).ConfigureAwait(false);
             }
@@ -46,7 +48,7 @@ namespace BombermanAspNet.Hubs
             try
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomName).ConfigureAwait(false);
-                await game.JoinRoom(roomName, playerName).ConfigureAwait(false);
+                await gameServer.JoinRoom(roomName, playerName).ConfigureAwait(false);
                 await lobby.AddConnectionContext(Context.ConnectionId, new ConnectionContext
                 {
                     RoomName = roomName,
@@ -68,7 +70,7 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(roomName));
             }
 
-            var state = await game.GetGameState(roomName).ConfigureAwait(false);
+            var state = await gameServer.GetGameState(roomName).ConfigureAwait(false);
 
             if (state == null)
             {
@@ -99,8 +101,8 @@ namespace BombermanAspNet.Hubs
 
             try
 			{
-                await game.HandleMove(roomName, playerName, keyCode).ConfigureAwait(false);
-                var state = await game.GetGameState(roomName).ConfigureAwait(false);
+                await gameServer.HandleAction(roomName, playerName, keyCode).ConfigureAwait(false);
+                var state = await gameServer.GetGameState(roomName).ConfigureAwait(false);
                 await Clients.Group(roomName).SendAsync("ReceiveGameState", state).ConfigureAwait(false);
             }
             catch

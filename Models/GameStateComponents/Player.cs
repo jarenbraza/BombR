@@ -24,12 +24,6 @@
         /// <summary>A flag of whether the player is alive or not.</summary>
         public bool IsAlive { get; set; }
 
-        public Player()
-        {
-            previousRow = Row;
-            previousCol = Col;
-        }
-
         // TODO: Refactor into utility
         internal static int GetNextRow()
         {

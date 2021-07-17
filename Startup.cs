@@ -1,3 +1,4 @@
+using BombermanAspNet.Servers;
 using BombermanAspNet.Utilities;
 using BombermanAspNet.Hubs;
 using Microsoft.AspNetCore.Builder;
@@ -30,7 +31,7 @@ namespace BombermanAspNet
             services.AddSignalR(options => options.EnableDetailedErrors = true);
 
             services.AddSingleton<ChatUtils>();
-            services.AddSingleton<GameUtils>();
+            services.AddSingleton<GameServer>();
             services.AddSingleton<LobbyUtils>();
         }
 
