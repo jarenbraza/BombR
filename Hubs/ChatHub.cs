@@ -23,7 +23,7 @@ namespace BombermanAspNet.Hubs
 
             if (context != null)
             {
-                await Clients.OthersInGroup(context.RoomName).SendAsync("PlayerDisconnected", context.PlayerName).ConfigureAwait(false);
+                await Clients.OthersInGroup(context.RoomName).SendAsync("PlayerDisconnected", context.PlayerName);
             }
             else
             {
@@ -76,7 +76,7 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(playerName));
             }
 
-            await Clients.OthersInGroup(roomName).SendAsync("PlayerConnected", playerName).ConfigureAwait(false);
+            await Clients.OthersInGroup(roomName).SendAsync("PlayerConnected", playerName);
         }
 
         public async Task SendMessage(string roomName, string message, string sender)
@@ -96,7 +96,7 @@ namespace BombermanAspNet.Hubs
                 throw new ArgumentException(nameof(sender));
             }
 
-            await Clients.Group(roomName).SendAsync("ReceiveMessage", message, sender).ConfigureAwait(false);
+            await Clients.Group(roomName).SendAsync("ReceiveMessage", message, sender);
         }
     }
 }
