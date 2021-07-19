@@ -21,7 +21,7 @@ namespace BombermanAspNet.Hubs
         {
             foreach (var room in await lobby.GetRooms())
             {
-                await Clients.Caller.SendAsync("UpdateRoomInTable", room).ConfigureAwait(false);
+                await Clients.Caller.SendAsync("UpdateRoomInTable", room);
             }
 
             await base.OnConnectedAsync();
